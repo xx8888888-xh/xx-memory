@@ -1,0 +1,135 @@
+package com.xxmemory.app.ui.review
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.xxmemory.app.data.AppDatabase
+import com.xxmemory.app.data.entity.Card
+import com.xxmemory.app.data.entity.ReviewLog
+import com.xxmemory.app.data.repository.CardRepository
+import com.xxmemory.app.domain.EbbinghausAlgorithm
+import com.xxmemory.app.domain.Scheduler
+import com.xxmemory.app.XxMemoryApplication
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+
+data class ReviewUiState(
+    val cards: List<Card> = emptyList(),
+    val currentIndex: Int = 0,
+    val currentCard: Card? = null,
+    val isFlipped: Boolean = false,
+    val progress: Float = 0f,
+    val totalCount: Int = 0,
+    val currentNumber: Int = 0,
+    val isLoading: Boolean = true,
+    val isComplete: Boolean = false,
+    val completedCount: Int = 0,
+    val nextScheduleInfo: String? = null
+)
+
+class ReviewViewModel : ViewModel() {
+    private val repository: CardRepository
+
+    private val _uiState = MutableStateFlow(ReviewUiState())
+    val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
+
+    init {
+        val db = AppDatabase.getInstance(XxMemoryApplication.instance)
+        repository = CardRepository(db.cardDao(), db.reviewLogDao())
+        loadDueCards()
+    }
+
+    fun loadDueCards() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            val now = System.currentTimeMillis()
+            val startOfDay = CardRepository.getStartOfDay(now)
+            val cards = repository.getDueCardsList(startOfDay)
+
+            if (cards.isEmpty()) {
+                _uiState.value = ReviewUiState(
+                    isLoading = false,
+                    isComplete = true
+                )
+                return@launch
+            }
+
+            _uiState.value = ReviewUiState(
+                cards = cards,
+                currentIndex = 0,
+                currentCard = cards.firstOrNull(),
+                isFlipped = false,
+                totalCount = cards.size,
+                currentNumber = 1,
+                isLoading = false,
+                progress = 1f / cards.size
+            )
+        }
+    }
+
+    fun flipCard() {
+        _uiState.value = _uiState.value.copy(isFlipped = true)
+    }
+
+    fun assessCard(quality: Int) {
+        val state = _uiState.value
+        val card = state.currentCard ?: return
+
+        viewModelScope.launch {
+            val result = EbbinghausAlgorithm.calculate(
+                quality = quality,
+                repetitions = card.repetitions,
+                easeFactor = card.easeFactor,
+                currentInterval = card.interval
+            )
+
+            val updatedCard = card.copy(
+                repetitions = result.nextRepetitions,
+                easeFactor = result.nextEaseFactor,
+                interval = result.nextInterval,
+                nextReviewDate = result.nextReviewDate
+            )
+            repository.updateCard(updatedCard)
+
+            val log = ReviewLog(
+                cardId = card.id,
+                quality = quality,
+                reviewDate = System.currentTimeMillis(),
+                nextInterval = result.nextInterval
+            )
+            repository.insertReviewLog(log)
+
+            val nextIndex = state.currentIndex + 1
+            if (nextIndex >= state.cards.size) {
+                _uiState.value = state.copy(
+                    isComplete = true,
+                    completedCount = state.completedCount + 1,
+                    currentCard = null,
+                    isFlipped = false,
+                    nextScheduleInfo = null
+                )
+            } else {
+                val nextCard = state.cards[nextIndex]
+                _uiState.value = state.copy(
+                    currentIndex = nextIndex,
+                    currentCard = nextCard,
+                    isFlipped = false,
+                    currentNumber = nextIndex + 1,
+                    progress = (nextIndex + 1).toFloat() / state.cards.size,
+                    completedCount = state.completedCount + 1,
+                    nextScheduleInfo = "下次复习: ${getIntervalText(result.nextInterval)}"
+                )
+            }
+        }
+    }
+
+    private fun getIntervalText(interval: Int): String = when {
+        interval < 1 -> "今天"
+        interval == 1 -> "明天"
+        interval < 7 -> "${interval}天后"
+        interval < 30 -> "${interval / 7}周后"
+        interval < 365 -> "${interval / 30}个月后"
+        else -> "${interval / 365}年后"
+    }
+}

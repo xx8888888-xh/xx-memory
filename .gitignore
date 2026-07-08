@@ -1,4 +1,4 @@
-﻿# GitHub 令牌文件 - 禁止同步
+# GitHub 令牌文件 - 禁止同步
 github_token_for_clawbot_yuanbao.txt
 
 # 其他敏感文件
@@ -7,3 +7,16 @@ github_token_for_clawbot_yuanbao.txt
 *.pem
 *.secret
 .env
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.iml
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo

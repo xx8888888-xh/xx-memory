@@ -134,7 +134,237 @@ body{font-family:var(--font-sans);background:var(--color-bg);color:var(--color-t
 <button class="tab-btn" data-page="statistics"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20V12" stroke-linecap="round"/><path d="M9 20V8" stroke-linecap="round"/><path d="M14 20V14" stroke-linecap="round"/><path d="M19 20V5" stroke-linecap="round"/><path d="M3 20H21" stroke-linecap="round"/></svg></span><span class="tab-label">统计</span></button>
 <button class="tab-btn" data-page="settings"><span class="tab-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tab-label">设置</span></button>
 </nav>
+<div id="toast" style="position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(74,63,55,0.88);color:#FFF;padding:10px 24px;border-radius:9999px;font-size:14px;font-weight:500;pointer-events:none;opacity:0;transition:opacity 0.3s ease;white-space:nowrap;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);"></div>
 </div><!-- end app-frame -->
-<script>(function(){var tabs=document.querySelectorAll('.tab-btn');var sections=document.querySelectorAll('.page-view');var pt=document.getElementById('page-title');var t={home:'首页',import:'导入',review:'复习',statistics:'学习统计',settings:'设置'};function sw(p){sections.forEach(function(s){s.style.display='none'});var el=document.querySelector('[data-page="'+p+'"]');if(el)el.style.display='block';tabs.forEach(function(tb){tb.style.color='#C4B8AD';tb.removeAttribute('data-active')});var at=document.querySelector('.tab-btn[data-page="'+p+'"]');if(at){at.style.color='#E8916E';at.setAttribute('data-active','true')}pt.textContent=t[p]||'';if(typeof lucide!=='undefined')lucide.createIcons();document.querySelector('.content-wrap').scrollTop=0}tabs.forEach(function(tab){tab.addEventListener('click',function(){sw(tab.getAttribute('data-page'))})});var fb=document.querySelector('[data-dom-id="card-flip"]');if(fb)fb.addEventListener('click',function(e){if(e.target.closest('.speaker-btn'))return;fb.classList.toggle('is-flipped')});var sb=document.querySelector('[data-dom-id="cta-start-review"]');if(sb)sb.addEventListener('click',function(){sw('review')});var ch=document.querySelectorAll('.filter-chips .chip');ch.forEach(function(c){c.addEventListener('click',function(){ch.forEach(function(x){x.classList.remove('is-active')});c.classList.add('is-active')})});if(typeof lucide!=='undefined')lucide.createIcons()})();</script>
+<input type="file" id="hidden-file-input" accept=".md,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.apkg,.mp3,.wav,.png,.jpg,.jpeg,.gif" style="display:none;">
+<script>
+(function(){
+  // ===== Toast notification system =====
+  var toastEl = document.getElementById('toast');
+  var toastTimer;
+  function showToast(msg) {
+    if (toastTimer) clearTimeout(toastTimer);
+    toastEl.textContent = msg;
+    toastEl.style.opacity = '1';
+    toastTimer = setTimeout(function() {
+      toastEl.style.opacity = '0';
+    }, 2000);
+  }
+
+  // ===== Tab switching =====
+  var tabs = document.querySelectorAll('.tab-btn');
+  var sections = document.querySelectorAll('.page-view');
+  var pt = document.getElementById('page-title');
+  var t = {home:'首页',import:'导入',review:'复习',statistics:'学习统计',settings:'设置'};
+
+  function sw(p) {
+    sections.forEach(function(s){s.style.display='none'});
+    var el = document.querySelector('[data-page="'+p+'"]');
+    if(el) el.style.display='block';
+    tabs.forEach(function(tb){
+      tb.removeAttribute('data-active');
+    });
+    var at = document.querySelector('.tab-btn[data-page="'+p+'"]');
+    if(at){
+      at.setAttribute('data-active','true');
+    }
+    pt.textContent = t[p]||'';
+    if(typeof lucide!=='undefined') lucide.createIcons();
+    document.querySelector('.content-wrap').scrollTop = 0;
+  }
+
+  tabs.forEach(function(tab){
+    tab.addEventListener('click',function(){
+      sw(tab.getAttribute('data-page'));
+    });
+  });
+
+  // ===== Card flip =====
+  var fb = document.querySelector('[data-dom-id="card-flip"]');
+  if(fb) fb.addEventListener('click',function(e){
+    if(e.target.closest('.speaker-btn')) return;
+    fb.classList.toggle('is-flipped');
+  });
+
+  // ===== CTA start review =====
+  var sb = document.querySelector('[data-dom-id="cta-start-review"]');
+  if(sb) sb.addEventListener('click',function(){sw('review')});
+
+  // ===== Filter chips =====
+  var ch = document.querySelectorAll('.filter-chips .chip');
+  ch.forEach(function(c){
+    c.addEventListener('click',function(){
+      ch.forEach(function(x){x.classList.remove('is-active')});
+      c.classList.add('is-active');
+    });
+  });
+
+  // ===== 1. Assessment buttons =====
+  var assessmentBtns = document.querySelectorAll('.assessment-btn');
+  var scheduleInfo = document.querySelector('.schedule-info');
+  var assessmentLabels = {forget:'忘记',hard:'困难',good:'良好',easy:'简单'};
+  var nextReviewTimes = {forget:'1 分钟',hard:'10 分钟',good:'1 天',easy:'4 天'};
+  assessmentBtns.forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var type = '';
+      if(btn.classList.contains('forget')) type = 'forget';
+      else if(btn.classList.contains('hard')) type = 'hard';
+      else if(btn.classList.contains('good')) type = 'good';
+      else if(btn.classList.contains('easy')) type = 'easy';
+      showToast('已记录: ' + assessmentLabels[type]);
+      if(scheduleInfo) {
+        scheduleInfo.textContent = '基于艾宾浩斯曲线 · 下次复习: ' + nextReviewTimes[type] + '后';
+      }
+    });
+  });
+
+  // ===== 2. Import file button =====
+  var fileInput = document.getElementById('hidden-file-input');
+  var selectFileBtn = document.querySelector('.select-file-btn');
+  if(selectFileBtn && fileInput) {
+    selectFileBtn.addEventListener('click',function(){
+      fileInput.click();
+    });
+    fileInput.addEventListener('change',function(){
+      if(fileInput.files.length > 0) {
+        showToast('已选择: ' + fileInput.files[0].name);
+      }
+    });
+  }
+
+  // ===== 3. URL fetch button =====
+  var fetchBtn = document.querySelector('.fetch-url-btn');
+  if(fetchBtn) {
+    fetchBtn.addEventListener('click',function(){
+      showToast('正在解析链接...');
+      setTimeout(function(){
+        var cardCount = Math.floor(Math.random() * 20) + 5;
+        showToast('链接解析完成，共生成 ' + cardCount + ' 张卡片');
+      }, 1500);
+    });
+  }
+
+  // ===== 4. AI Skill button =====
+  var aiSkillBtn = document.querySelector('.ai-skill-btn');
+  if(aiSkillBtn) {
+    aiSkillBtn.addEventListener('click',function(){
+      showToast('AI Skill 已启动，正在分析内容...');
+    });
+  }
+
+  // ===== 5. Speaker button - Web Speech API =====
+  var speakerBtn = document.querySelector('.speaker-btn');
+  if(speakerBtn) {
+    speakerBtn.addEventListener('click',function(e){
+      e.stopPropagation();
+      var questionEl = document.querySelector('.card-question');
+      if(questionEl && 'speechSynthesis' in window) {
+        speechSynthesis.cancel();
+        var utterance = new SpeechSynthesisUtterance(questionEl.textContent);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.9;
+        speechSynthesis.speak(utterance);
+      }
+    });
+  }
+
+  // ===== 6. Dark mode toggle =====
+  var darkStyleEl = null;
+  function applyDarkMode() {
+    if (darkStyleEl) return;
+    darkStyleEl = document.createElement('style');
+    darkStyleEl.id = 'dark-mode-override';
+    darkStyleEl.textContent = [
+      ':root {',
+      '--color-bg:#1a1a2e;',
+      '--color-bg-secondary:#16213e;',
+      '--color-bg-elevated:#16213e;',
+      '--color-bg-inset:#0f0f23;',
+      '--color-surface:#16213e;',
+      '--color-surface-hover:#1a2744;',
+      '--color-text-primary:#e0dcd5;',
+      '--color-text-secondary:#a09b90;',
+      '--color-text-tertiary:#6b6560;',
+      '--color-border:rgba(255,255,255,0.06);',
+      '--color-border-strong:rgba(255,255,255,0.12);',
+      '--color-divider:rgba(255,255,255,0.08);',
+      '--shadow-card:0 1px 3px rgba(0,0,0,0.2);',
+      '--shadow-elevated:0 4px 14px rgba(0,0,0,0.25);',
+      '--shadow-float:0 8px 24px rgba(0,0,0,0.3);',
+      '}',
+      'body { background:#1a1a2e; }',
+      '.app-frame { background:#1a1a2e; }',
+      '#page-title { background:#1a1a2e; color:#e0dcd5; }',
+      '.shared-tab-bar { background:rgba(26,26,46,0.85); border-top-color:rgba(255,255,255,0.08); }',
+      '.progress-card,.week-card,.review-card,.settings-card,.profile-card,.ai-skill-card,.recent-import-item { background:#16213e; border-color:rgba(255,255,255,0.06); }',
+      '.review-card:hover,.profile-card:hover,.recent-import-item:hover { background:#1a2744; }',
+      '.review-card-inner,.review-card-face { background:#16213e; }',
+      '.format-chip { background:#0f0f23; }',
+      '.ios-toggle-track { background:#3a3a5c; }',
+      '.progress-bar-track,.ring-bg { background:#2a2a4a; }',
+      '.url-input { background:#16213e; color:#e0dcd5; border-color:rgba(255,255,255,0.12); }',
+      '.chip { background:#16213e; }',
+      '.chip.is-active { background:rgba(232,145,110,0.15); }',
+      '.settings-row:hover { background:#1a2744; }',
+      '.settings-row:active { background:#0f0f23; }',
+      '.settings-row+.settings-row { border-top-color:rgba(255,255,255,0.08); }',
+      '.card-label { color:#a09b90; }',
+      '.progress-subtitle { color:#a09b90; }',
+      '.greeting-date { color:#a09b90; }',
+      '.week-label { color:#a09b90; }',
+      '.list-label { color:#a09b90; }',
+      '.card-meta { color:#a09b90; }',
+      '.card-detail { color:#a09b90; }',
+      '.assessment-label { color:#a09b90; }',
+      '.schedule-info { color:#a09b90; }',
+      '.flip-hint { color:#6b6560; }',
+      '.separator { color:#6b6560; }',
+      '.separator::before,.separator::after { background:rgba(255,255,255,0.08); }',
+      '.ai-skill-card-desc { color:#a09b90; }',
+      '.format-chips-title { color:#a09b90; }',
+      '.recent-import-meta { color:#6b6560; }',
+      '.settings-group-label { color:#a09b90; }',
+      '.settings-row-detail { color:#a09b90; }',
+      '.settings-chevron { color:#6b6560; }',
+      '.settings-footer { color:#6b6560; }',
+      '.card-chevron { color:#6b6560; }',
+      '.progress-text { color:#a09b90; }',
+      '.recent-imports-title { color:#a09b90; }',
+      '.subtitle { color:#a09b90; }',
+      '.ring-caption { color:#a09b90; }'
+    ].join('');
+    document.head.appendChild(darkStyleEl);
+  }
+
+  function removeDarkMode() {
+    if (darkStyleEl) {
+      darkStyleEl.remove();
+      darkStyleEl = null;
+    }
+  }
+
+  var allSettingsRows = document.querySelectorAll('.settings-row');
+  allSettingsRows.forEach(function(row) {
+    var labelEl = row.querySelector('.settings-row-label');
+    if (labelEl && labelEl.textContent.trim() === '深色模式') {
+      var checkbox = row.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        checkbox.addEventListener('change', function() {
+          if (checkbox.checked) {
+            document.documentElement.classList.add('dark');
+            applyDarkMode();
+          } else {
+            document.documentElement.classList.remove('dark');
+            removeDarkMode();
+          }
+        });
+      }
+    }
+  });
+
+  if(typeof lucide!=='undefined') lucide.createIcons();
+})();
+</script>
 </body>
 </html>

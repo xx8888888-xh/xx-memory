@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">xx memory</string>
+    <string name="tab_home">主页</string>
+    <string name="tab_import">导入</string>
+    <string name="tab_review">复习</string>
+    <string name="tab_statistics">统计</string>
+    <string name="tab_settings">设置</string>
+    <string name="start_review">开始今日复习</string>
+    <string name="review_completed">今日复习已完成</string>
+    <string name="cards_count">%d 张卡片</string>
+    <string name="due_cards">待复习卡片</string>
+    <string name="no_due_cards">暂无待复习卡片</string>
+    <string name="assessment_forget">忘记</string>
+    <string name="assessment_hard">困难</string>
+    <string name="assessment_good">良好</string>
+    <string name="assessment_easy">简单</string>
+    <string name="notification_channel_name">复习提醒</string>
+    <string name="notification_channel_desc">艾宾浩斯遗忘曲线复习提醒</string>
+    <string name="notification_title">xx memory</string>
+    <string name="notification_text">您有 %d 张卡片需要复习</string>
+</resources>
