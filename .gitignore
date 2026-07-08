@@ -1,0 +1,9 @@
+﻿# GitHub 令牌文件 - 禁止同步
+github_token_for_clawbot_yuanbao.txt
+
+# 其他敏感文件
+*.token
+*.key
+*.pem
+*.secret
+.env
