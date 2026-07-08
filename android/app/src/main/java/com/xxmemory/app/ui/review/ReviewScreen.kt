@@ -35,15 +35,21 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import android.speech.tts.TextToSpeech
+import androidx.compose.runtime.DisposableEffect
+import java.util.Locale
+import androidx.compose.runtime.LaunchedEffect
 import com.xxmemory.app.ui.theme.Background
 import com.xxmemory.app.ui.theme.Error
 import com.xxmemory.app.ui.theme.Primary
@@ -59,6 +65,15 @@ fun ReviewScreen(
     viewModel: ReviewViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val tts = remember { TextToSpeech(context, null) }
+    DisposableEffect(tts) {
+        tts.language = Locale.CHINESE
+        onDispose {
+            tts.stop()
+            tts.shutdown()
+        }
+    }
 
     if (uiState.isLoading) {
         Box(
@@ -208,7 +223,14 @@ fun ReviewScreen(
                             .size(40.dp)
                             .clip(CircleShape)
                             .background(PrimaryLight.copy(alpha = 0.2f))
-                            .clickable { },
+                            .clickable {
+                                val text = if (uiState.isFlipped) {
+                                    card.answer
+                                } else {
+                                    card.question
+                                }
+                                tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(

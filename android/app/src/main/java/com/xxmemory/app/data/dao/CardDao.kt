@@ -50,6 +50,9 @@ interface CardDao {
     @Query("SELECT * FROM cards ORDER BY created_at DESC")
     fun getAllCards(): Flow<List<Card>>
 
+    @Query("SELECT * FROM cards ORDER BY created_at DESC")
+    suspend fun getAllCardsSync(): List<Card>
+
     @Query("DELETE FROM cards WHERE id = :id")
     suspend fun deleteCard(id: Long)
 }

@@ -1,6 +1,8 @@
 package com.xxmemory.app.ui.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
@@ -26,12 +28,36 @@ private val LightColorScheme = lightColorScheme(
     tertiary = PrimaryLight
 )
 
+private val DarkColorScheme = darkColorScheme(
+    primary = PrimaryLight,
+    onPrimary = PrimaryDark,
+    primaryContainer = PrimaryDark,
+    onPrimaryContainer = PrimaryLight,
+    secondary = PrimaryLight,
+    onSecondary = PrimaryDark,
+    secondaryContainer = PrimaryDark,
+    background = DarkBackground,
+    onBackground = DarkTextPrimary,
+    surface = DarkSurface,
+    onSurface = DarkTextPrimary,
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkTextSecondary,
+    outline = DarkOutline,
+    outlineVariant = DarkOutlineVariant,
+    error = Error,
+    errorContainer = ErrorContainer,
+    onError = OnPrimary,
+    tertiary = PrimaryLight
+)
+
 @Composable
 fun XxMemoryTheme(
+    darkMode: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val colorScheme = if (darkMode) DarkColorScheme else LightColorScheme
     MaterialTheme(
-        colorScheme = LightColorScheme,
+        colorScheme = colorScheme,
         typography = Typography,
         content = content
     )

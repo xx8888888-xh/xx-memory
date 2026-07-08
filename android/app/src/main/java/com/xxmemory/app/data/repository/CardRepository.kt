@@ -44,6 +44,8 @@ class CardRepository(
 
     fun getAllCards(): Flow<List<Card>> = cardDao.getAllCards()
 
+    suspend fun getAllCardsSync(): List<Card> = cardDao.getAllCardsSync()
+
     suspend fun getTodayReviewCount(startOfDay: Long, endOfDay: Long): Int =
         reviewLogDao.getTodayCount(startOfDay, endOfDay)
 

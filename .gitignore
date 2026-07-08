@@ -20,3 +20,9 @@ android/local.properties
 __pycache__/
 *.pyc
 *.pyo
+
+# 临时测试文件
+screenshot*.png
+test_*.png
+ui_*.xml
+sdk_*.txt

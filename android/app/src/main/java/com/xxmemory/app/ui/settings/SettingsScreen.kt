@@ -33,6 +33,8 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -57,6 +59,7 @@ import com.xxmemory.app.ui.theme.TextPrimary
 import com.xxmemory.app.ui.theme.TextSecondary
 import com.xxmemory.app.ui.theme.TextTertiary
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel()
@@ -157,6 +160,51 @@ fun SettingsScreen(
                 checked = uiState.showDetailFirst,
                 onCheckedChange = { viewModel.toggleShowDetailFirst(it) }
             )
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Memory algorithm section
+        SectionTitle("记忆算法")
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingsCard {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "当前算法: ${uiState.algorithmType}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = when (uiState.algorithmType) {
+                        "SM-2" -> "经典间隔重复算法，使用难度因子(EF)动态调整复习间隔"
+                        "艾宾浩斯固定" -> "基于艾宾浩斯遗忘曲线的固定复习间隔: 1天→2天→4天→7天→15天→30天"
+                        "FSRS" -> "Free Spaced Repetition Scheduler，机器学习驱动的自适应调度算法"
+                        else -> ""
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                // Algorithm buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("SM-2", "艾宾浩斯固定", "FSRS").forEach { algo ->
+                        FilterChip(
+                            selected = uiState.algorithmType == algo,
+                            onClick = { viewModel.setAlgorithmType(algo) },
+                            label = { Text(algo, style = MaterialTheme.typography.labelSmall) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = Primary,
+                                selectedLabelColor = Surface
+                            ),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
         }
         Spacer(modifier = Modifier.height(20.dp))
 

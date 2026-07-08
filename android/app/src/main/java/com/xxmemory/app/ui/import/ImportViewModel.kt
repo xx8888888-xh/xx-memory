@@ -1,5 +1,7 @@
 package com.xxmemory.app.ui.import
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xxmemory.app.data.AppDatabase
@@ -38,6 +40,48 @@ class ImportViewModel : ViewModel() {
                 _uiState.value = _uiState.value.copy(
                     recentImports = cards.take(10),
                     isLoading = false
+                )
+            }
+        }
+    }
+
+    fun importFromFile(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isImporting = true, importMessage = null)
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val content = inputStream?.bufferedReader()?.readText() ?: ""
+                inputStream?.close()
+
+                if (content.isBlank()) {
+                    _uiState.value = _uiState.value.copy(
+                        isImporting = false,
+                        importMessage = "文件内容为空"
+                    )
+                    return@launch
+                }
+
+                importFromJson(content)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isImporting = false,
+                    importMessage = "文件读取失败: ${e.message}"
+                )
+            }
+        }
+    }
+
+    fun deleteCard(cardId: Long) {
+        viewModelScope.launch {
+            try {
+                repository.deleteCard(cardId)
+                _uiState.value = _uiState.value.copy(
+                    importMessage = "卡片已删除"
+                )
+                loadRecentImports()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    importMessage = "删除失败: ${e.message}"
                 )
             }
         }

@@ -30,6 +30,7 @@ data class ReviewUiState(
 
 class ReviewViewModel : ViewModel() {
     private val repository: CardRepository
+    private val settingsManager = XxMemoryApplication.instance.settingsManager
 
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
@@ -55,15 +56,22 @@ class ReviewViewModel : ViewModel() {
                 return@launch
             }
 
+            // Apply daily card limit
+            val limit = settingsManager.dailyCardLimit
+            val limitedCards = if (cards.size > limit) cards.take(limit) else cards
+
+            // Apply shuffle
+            val finalCards = if (settingsManager.shuffleCards) limitedCards.shuffled() else limitedCards
+
             _uiState.value = ReviewUiState(
-                cards = cards,
+                cards = finalCards,
                 currentIndex = 0,
-                currentCard = cards.firstOrNull(),
-                isFlipped = false,
-                totalCount = cards.size,
+                currentCard = finalCards.firstOrNull(),
+                isFlipped = settingsManager.showDetailFirst,
+                totalCount = finalCards.size,
                 currentNumber = 1,
                 isLoading = false,
-                progress = 1f / cards.size
+                progress = 1f / finalCards.size
             )
         }
     }
@@ -77,7 +85,8 @@ class ReviewViewModel : ViewModel() {
         val card = state.currentCard ?: return
 
         viewModelScope.launch {
-            val result = EbbinghausAlgorithm.calculate(
+            val algorithm = EbbinghausAlgorithm.getAlgorithm(settingsManager.algorithmType)
+            val result = algorithm.calculate(
                 quality = quality,
                 repetitions = card.repetitions,
                 easeFactor = card.easeFactor,

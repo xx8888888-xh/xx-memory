@@ -23,7 +23,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Link
@@ -38,6 +40,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -57,12 +60,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.data.entity.Card
 import com.xxmemory.app.ui.theme.Background
+import com.xxmemory.app.ui.theme.Error
 import com.xxmemory.app.ui.theme.Info
 import com.xxmemory.app.ui.theme.Outline
 import com.xxmemory.app.ui.theme.Primary
@@ -106,7 +111,7 @@ fun ImportScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             // File picker section
-            FileImportSection()
+            FileImportSection(viewModel = viewModel)
             Spacer(modifier = Modifier.height(16.dp))
 
             // URL input section
@@ -130,7 +135,7 @@ fun ImportScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // AI Skill card section
-            AiSkillSection()
+            AiSkillSection(viewModel = viewModel)
             Spacer(modifier = Modifier.height(16.dp))
 
             // Supported format chips
@@ -168,7 +173,7 @@ fun ImportScreen(
                 }
             } else {
                 uiState.recentImports.forEach { card ->
-                    RecentImportItem(card = card)
+                    RecentImportItem(card = card, viewModel = viewModel)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -193,11 +198,14 @@ fun ImportScreen(
 }
 
 @Composable
-private fun FileImportSection() {
+private fun FileImportSection(viewModel: ImportViewModel) {
+    val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        // File picked - would be processed here
+        uri?.let {
+            viewModel.importFromFile(context, it)
+        }
     }
 
     Card(
@@ -316,9 +324,13 @@ private fun UrlImportSection(
 }
 
 @Composable
-private fun AiSkillSection() {
+private fun AiSkillSection(viewModel: ImportViewModel) {
+    var showAiInfo by remember { mutableStateOf(false) }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { showAiInfo = true },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Surface)
     ) {
@@ -356,7 +368,27 @@ private fun AiSkillSection() {
                     color = TextSecondary
                 )
             }
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = TextSecondary
+            )
         }
+    }
+
+    if (showAiInfo) {
+        AlertDialog(
+            onDismissRequest = { showAiInfo = false },
+            title = { Text("AI 智能导入", fontWeight = FontWeight.Bold) },
+            text = {
+                Text("AI 智能导入功能需要将 AI Skill 文件上传至 AI 助手（如 TRAE）使用。\n\n支持的导入方式：\n• 拍照识别文字内容\n• 网页内容提取\n• 语音转文字\n\nAI 将自动解析内容并生成记忆卡片。")
+            },
+            confirmButton = {
+                TextButton(onClick = { showAiInfo = false }) {
+                    Text("知道了")
+                }
+            }
+        )
     }
 }
 
@@ -402,7 +434,7 @@ private fun FormatChipsSection() {
 }
 
 @Composable
-private fun RecentImportItem(card: Card) {
+private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -411,7 +443,7 @@ private fun RecentImportItem(card: Card) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(start = 12.dp, top = 12.dp, bottom = 12.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -436,6 +468,16 @@ private fun RecentImportItem(card: Card) {
                         color = TextSecondary
                     )
                 }
+            }
+            IconButton(
+                onClick = { viewModel.deleteCard(card.id) }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = "删除",
+                    tint = Error.copy(alpha = 0.7f),
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }

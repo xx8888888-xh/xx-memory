@@ -43,12 +43,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.data.entity.Card
+import com.xxmemory.app.ui.theme.Background
 import com.xxmemory.app.ui.theme.Primary
 import com.xxmemory.app.ui.theme.PrimaryLight
+import com.xxmemory.app.ui.theme.Success
 import com.xxmemory.app.ui.theme.Surface
 import com.xxmemory.app.ui.theme.TextPrimary
 import com.xxmemory.app.ui.theme.TextSecondary
 import com.xxmemory.app.ui.theme.TextTertiary
+import com.xxmemory.app.ui.theme.Warning
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -71,6 +74,8 @@ fun HomeScreen(
         item {
             Spacer(modifier = Modifier.height(16.dp))
             GreetingHeader()
+            Spacer(modifier = Modifier.height(12.dp))
+            CardCountBadge(totalCards = uiState.totalCards, dueCount = uiState.dueCount, todayReviewed = uiState.todayReviewed)
             Spacer(modifier = Modifier.height(16.dp))
         }
 
@@ -206,6 +211,78 @@ private fun GreetingHeader() {
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary
         )
+    }
+}
+
+@Composable
+private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(PrimaryLight.copy(alpha = 0.15f))
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Column {
+                Text(
+                    text = totalCards.toString(),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Primary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "总卡片",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Success.copy(alpha = 0.1f))
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Column {
+                Text(
+                    text = todayReviewed.toString(),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Success,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "今日复习",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+            }
+        }
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Warning.copy(alpha = 0.1f))
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Column {
+                Text(
+                    text = dueCount.toString(),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Warning,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "待复习",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary
+                )
+            }
+        }
     }
 }
 

@@ -72,17 +72,18 @@ class StatisticsViewModel : ViewModel() {
                 weeklyStats.add(WeeklyDayStat(dayNames[i], count))
             }
 
-            // Subject mastery
+            // Subject mastery - use real data from repository
             val subjectMastery = mutableListOf<SubjectMastery>()
-            val subjects = listOf("数学", "英语", "编程", "历史", "其他")
+            val allCards = repository.getAllCardsSync()
+            val subjects = allCards.map { it.subject }.distinct().filter { it.isNotBlank() }
             for (subject in subjects) {
-                val cards = repository.getCardsBySubject(subject)
-                // Simple: count how many cards exist
+                val subjectCards = allCards.filter { it.subject == subject }
+                val masteredCount = subjectCards.count { it.interval >= 21 } // 21+ days = mastered
                 subjectMastery.add(
                     SubjectMastery(
                         subject = subject,
-                        totalCards = 10,
-                        masteredCards = (0..10).random()
+                        totalCards = subjectCards.size,
+                        masteredCards = masteredCount
                     )
                 )
             }
