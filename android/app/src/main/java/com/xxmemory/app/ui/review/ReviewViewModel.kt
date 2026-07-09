@@ -101,7 +101,7 @@ class ReviewViewModel : ViewModel() {
                 val updatedCard = card.copy(
                     repetitions = result.nextRepetitions,
                     easeFactor = result.nextEaseFactor,
-                    difficulty = result.nextEaseFactor, // Keep difficulty in sync with EF.
+                    difficulty = if (result.nextDifficulty > 0) result.nextDifficulty.toFloat() else card.difficulty,
                     interval = result.nextInterval,
                     nextReviewDate = result.nextReviewDate
                 )

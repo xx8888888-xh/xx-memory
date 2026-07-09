@@ -96,13 +96,15 @@ class StatisticsViewModel : ViewModel() {
 
     private suspend fun calculateStreak(todayStart: Long): Int {
         var streak = 0
-        var checkDay = todayStart
+        val cal = java.util.Calendar.getInstance()
+        cal.timeInMillis = todayStart
         for (i in 0..365) {
-            val dayEnd = CardRepository.getEndOfDay(checkDay)
-            val count = repository.getCountForDay(checkDay, dayEnd)
+            val dayStart = CardRepository.getStartOfDay(cal.timeInMillis)
+            val dayEnd = CardRepository.getEndOfDay(dayStart)
+            val count = repository.getCountForDay(dayStart, dayEnd)
             if (count > 0) {
                 streak++
-                checkDay -= 86400000L
+                cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
             } else {
                 break
             }

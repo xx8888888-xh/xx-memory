@@ -10,6 +10,7 @@ object EbbinghausAlgorithm {
 
     fun getAlgorithm(type: String): MemoryAlgorithm {
         return when (type) {
+            "SM-2" -> SM2Algorithm
             "艾宾浩斯固定" -> EbbinghausFixedAlgorithm
             "FSRS" -> FsrsAlgorithm
             else -> {
