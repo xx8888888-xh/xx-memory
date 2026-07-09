@@ -4,7 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.PowerManager
+import com.xxmemory.app.domain.NotificationScheduler
 import com.xxmemory.app.domain.Scheduler
+import kotlinx.coroutines.runBlocking
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -13,7 +15,11 @@ class AlarmReceiver : BroadcastReceiver() {
         val wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "xxmemory:alarm")
         wakeLock.acquire(10_000)
         try {
-            Scheduler.scheduleReviewReminder(context)
+            runBlocking {
+                Scheduler.scheduleReviewReminder(context)
+            }
+            // This is a one-shot exact alarm; schedule the next occurrence for tomorrow.
+            NotificationScheduler.scheduleDailyReminder(context)
         } finally {
             if (wakeLock.isHeld) wakeLock.release()
             pendingResult.finish()

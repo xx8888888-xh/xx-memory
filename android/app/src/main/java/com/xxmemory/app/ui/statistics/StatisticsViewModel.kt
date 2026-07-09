@@ -2,9 +2,9 @@ package com.xxmemory.app.ui.statistics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.data.AppDatabase
 import com.xxmemory.app.data.repository.CardRepository
-import com.xxmemory.app.XxMemoryApplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,16 +53,13 @@ class StatisticsViewModel : ViewModel() {
                 val startOfDay = CardRepository.getStartOfDay(now)
                 val endOfDay = CardRepository.getEndOfDay(now)
                 val startOfWeek = CardRepository.getStartOfWeek(now)
-                val endOfWeek = CardRepository.getEndOfWeek(now)
 
                 val totalCards = repository.getTotalCardsSync()
                 val todayReviewed = repository.getTodayReviewCount(startOfDay, endOfDay)
                 val totalReviewed = repository.getCountAfter(0)
 
-                // Calculate streak
                 val streak = calculateStreak(startOfDay)
 
-                // Weekly stats
                 val dayNames = listOf("一", "二", "三", "四", "五", "六", "日")
                 val weeklyStats = mutableListOf<WeeklyDayStat>()
                 val cal = java.util.Calendar.getInstance()
@@ -75,21 +72,14 @@ class StatisticsViewModel : ViewModel() {
                     weeklyStats.add(WeeklyDayStat(dayNames[i], count))
                 }
 
-                // Subject mastery - use real data from repository
-                val subjectMastery = mutableListOf<SubjectMastery>()
                 val allCards = repository.getAllCardsSync()
-                val subjects = allCards.map { it.subject }.distinct().filter { it.isNotBlank() }
-                for (subject in subjects) {
-                    val subjectCards = allCards.filter { it.subject == subject }
-                    val masteredCount = subjectCards.count { it.interval >= 21 } // 21+ days = mastered
-                    subjectMastery.add(
-                        SubjectMastery(
-                            subject = subject,
-                            totalCards = subjectCards.size,
-                            masteredCards = masteredCount
-                        )
-                    )
-                }
+                val subjectMastery = allCards
+                    .groupBy { it.subject }
+                    .filter { it.key.isNotBlank() }
+                    .map { (subject, cards) ->
+                        val masteredCount = cards.count { it.interval >= 21 }
+                        SubjectMastery(subject, cards.size, masteredCount)
+                    }
 
                 _uiState.value = StatisticsUiState(
                     streakDays = streak,
@@ -106,13 +96,15 @@ class StatisticsViewModel : ViewModel() {
 
     private suspend fun calculateStreak(todayStart: Long): Int {
         var streak = 0
-        var checkDay = todayStart
+        val cal = java.util.Calendar.getInstance()
+        cal.timeInMillis = todayStart
         for (i in 0..365) {
-            val dayEnd = CardRepository.getEndOfDay(checkDay)
-            val count = repository.getCountForDay(checkDay, dayEnd)
+            val dayStart = CardRepository.getStartOfDay(cal.timeInMillis)
+            val dayEnd = CardRepository.getEndOfDay(dayStart)
+            val count = repository.getCountForDay(dayStart, dayEnd)
             if (count > 0) {
                 streak++
-                checkDay -= 86400000L
+                cal.add(java.util.Calendar.DAY_OF_YEAR, -1)
             } else {
                 break
             }

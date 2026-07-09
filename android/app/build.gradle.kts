@@ -94,6 +94,9 @@ dependencies {
     implementation("org.commonmark:commonmark:0.21.0")                  // Markdown
     implementation("com.opencsv:opencsv:5.9")                           // CSV
 
+    // 图片加载
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
     // 测试依赖
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")

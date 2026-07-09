@@ -43,15 +43,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.data.entity.Card
-import com.xxmemory.app.ui.theme.Background
-import com.xxmemory.app.ui.theme.Primary
-import com.xxmemory.app.ui.theme.PrimaryLight
-import com.xxmemory.app.ui.theme.Success
-import com.xxmemory.app.ui.theme.Surface
-import com.xxmemory.app.ui.theme.TextPrimary
-import com.xxmemory.app.ui.theme.TextSecondary
-import com.xxmemory.app.ui.theme.TextTertiary
-import com.xxmemory.app.ui.theme.Warning
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -103,7 +94,7 @@ fun HomeScreen(
             Text(
                 text = "本周学习",
                 style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -123,8 +114,8 @@ fun HomeScreen(
                             onClick = { viewModel.selectSubject(null) },
                             label = { Text("全部") },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Surface
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.surface
                             )
                         )
                     }
@@ -134,8 +125,8 @@ fun HomeScreen(
                             onClick = { viewModel.selectSubject(subject) },
                             label = { Text(subject) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Surface
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.surface
                             )
                         )
                     }
@@ -149,7 +140,7 @@ fun HomeScreen(
             Text(
                 text = "待复习卡片",
                 style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -166,7 +157,7 @@ fun HomeScreen(
                 ) {
                     Text(
                         text = "暂无待复习卡片",
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -202,14 +193,14 @@ private fun GreetingHeader() {
         Text(
             text = "$greeting 👋",
             style = MaterialTheme.typography.headlineLarge,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = today,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -224,20 +215,20 @@ private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int) {
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(PrimaryLight.copy(alpha = 0.15f))
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
                 .padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
             Column {
                 Text(
                     text = totalCards.toString(),
                     style = MaterialTheme.typography.titleLarge,
-                    color = Primary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "总卡片",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -245,20 +236,20 @@ private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int) {
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Success.copy(alpha = 0.1f))
+                .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f))
                 .padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
             Column {
                 Text(
                     text = todayReviewed.toString(),
                     style = MaterialTheme.typography.titleLarge,
-                    color = Success,
+                    color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "今日复习",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -266,20 +257,20 @@ private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int) {
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Warning.copy(alpha = 0.1f))
+                .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f))
                 .padding(horizontal = 12.dp, vertical = 10.dp)
         ) {
             Column {
                 Text(
                     text = dueCount.toString(),
                     style = MaterialTheme.typography.titleLarge,
-                    color = Warning,
+                    color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "待复习",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -295,7 +286,7 @@ private fun StartReviewButton(dueCount: Int, onClick: () -> Unit) {
             .height(56.dp),
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Primary
+            containerColor = MaterialTheme.colorScheme.primary
         ),
         enabled = dueCount > 0
     ) {
@@ -317,7 +308,7 @@ private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int) 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -335,14 +326,14 @@ private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int) 
                 CircularProgressIndicator(
                     progress = progress,
                     modifier = Modifier.size(64.dp),
-                    color = Primary,
-                    trackColor = PrimaryLight.copy(alpha = 0.3f),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                     strokeWidth = 6.dp
                 )
                 Text(
                     text = "${(progress * 100).toInt()}%",
                     style = MaterialTheme.typography.labelMedium,
-                    color = Primary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -352,12 +343,12 @@ private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int) 
                     text = "今日进度",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "已复习 $todayReviewed / $totalCards 张",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -376,7 +367,7 @@ private fun WeekCalendarStrip(weekStats: List<DayStat>) {
                 modifier = Modifier
                     .clip(RoundedCornerShape(12.dp))
                     .background(
-                        if (stat.isToday) Primary.copy(alpha = 0.1f)
+                        if (stat.isToday) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                         else androidx.compose.ui.graphics.Color.Transparent
                     )
                     .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -384,18 +375,18 @@ private fun WeekCalendarStrip(weekStats: List<DayStat>) {
                 Text(
                     text = stat.dayOfWeek,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (stat.isToday) Primary else TextSecondary
+                    color = if (stat.isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = stat.dayNum.toString(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = if (stat.isToday) FontWeight.Bold else FontWeight.Normal,
-                    color = if (stat.isToday) Primary else TextPrimary
+                    color = if (stat.isToday) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${stat.count}张",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextTertiary
+                    color = MaterialTheme.colorScheme.outline
                 )
             }
         }
@@ -409,7 +400,7 @@ private fun DueCardItem(card: Card, onCardClick: () -> Unit = {}) {
             .fillMaxWidth()
             .clickable { onCardClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -421,7 +412,7 @@ private fun DueCardItem(card: Card, onCardClick: () -> Unit = {}) {
                 Text(
                     text = card.question,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = FontWeight.Medium
@@ -431,7 +422,7 @@ private fun DueCardItem(card: Card, onCardClick: () -> Unit = {}) {
                     Text(
                         text = card.subject,
                         style = MaterialTheme.typography.bodySmall,
-                        color = Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -451,7 +442,7 @@ private fun DueCardItem(card: Card, onCardClick: () -> Unit = {}) {
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = TextSecondary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

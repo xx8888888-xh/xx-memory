@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.ChevronRight
@@ -26,10 +27,10 @@ import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SpeakerNotes
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -38,15 +39,18 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,13 +60,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.xxmemory.app.ui.theme.Background
-import com.xxmemory.app.ui.theme.Primary
-import com.xxmemory.app.ui.theme.PrimaryLight
-import com.xxmemory.app.ui.theme.Surface
-import com.xxmemory.app.ui.theme.TextPrimary
-import com.xxmemory.app.ui.theme.TextSecondary
-import com.xxmemory.app.ui.theme.TextTertiary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,23 +69,30 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    var showProfileDialog by remember { mutableStateOf(false) }
+    var showTimePickerDialog by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         Text(
             text = "设置",
             style = MaterialTheme.typography.headlineLarge,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(20.dp))
 
         // Profile card
-        ProfileCard(userName = uiState.userName, userEmail = uiState.userEmail)
+        ProfileCard(
+            userName = uiState.userName,
+            userEmail = uiState.userEmail,
+            onClick = { showProfileDialog = true }
+        )
         Spacer(modifier = Modifier.height(20.dp))
 
         // Account section
@@ -99,9 +103,9 @@ fun SettingsScreen(
                 icon = Icons.Filled.Person,
                 title = "个人信息",
                 subtitle = uiState.userName,
-                onClick = { Toast.makeText(context, "功能开发中", Toast.LENGTH_SHORT).show() }
+                onClick = { showProfileDialog = true }
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.Cloud,
                 title = "数据同步",
@@ -111,8 +115,8 @@ fun SettingsScreen(
                         checked = uiState.syncEnabled,
                         onCheckedChange = { viewModel.toggleSync(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Primary,
-                            checkedTrackColor = PrimaryLight
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                         )
                     )
                 }
@@ -132,12 +136,12 @@ fun SettingsScreen(
                     Text(
                         text = "每日卡片限制",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "${uiState.dailyCardLimit} 张",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Primary,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -149,19 +153,19 @@ fun SettingsScreen(
                     valueRange = 5f..100f,
                     steps = 18,
                     colors = SliderDefaults.colors(
-                        thumbColor = Primary,
-                        activeTrackColor = Primary
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.Shuffle,
                 title = "随机顺序复习",
                 checked = uiState.shuffleCards,
                 onCheckedChange = { viewModel.toggleShuffle(it) }
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.Visibility,
                 title = "先显示详细说明",
@@ -179,7 +183,7 @@ fun SettingsScreen(
                 Text(
                     text = "当前算法: ${uiState.algorithmType}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -191,10 +195,9 @@ fun SettingsScreen(
                         else -> ""
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                // Algorithm buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -205,8 +208,8 @@ fun SettingsScreen(
                             onClick = { viewModel.setAlgorithmType(algo) },
                             label = { Text(algo, style = MaterialTheme.typography.labelSmall) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Surface
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.surface
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -227,7 +230,7 @@ fun SettingsScreen(
                 checked = uiState.einkMode,
                 onCheckedChange = { viewModel.toggleEinkMode(it) }
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.SpeakerNotes,
                 title = "自动朗读",
@@ -244,9 +247,21 @@ fun SettingsScreen(
             SwitchItem(
                 icon = Icons.Filled.Notifications,
                 title = "每日复习提醒",
-                subtitle = "每天定时提醒复习",
+                subtitle = "每天 ${uiState.reminderHour.toString().padStart(2, '0')}:${uiState.reminderMinute.toString().padStart(2, '0')} 提醒复习",
                 checked = uiState.dailyReminder,
-                onCheckedChange = { viewModel.toggleDailyReminder(it) }
+                onCheckedChange = {
+                    val success = viewModel.toggleDailyReminder(it)
+                    if (!success) {
+                        Toast.makeText(context, "需要通知和精确闹钟权限才能开启提醒", Toast.LENGTH_LONG).show()
+                    }
+                }
+            )
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            SettingsItem(
+                icon = Icons.Filled.AccessTime,
+                title = "提醒时间",
+                subtitle = "${uiState.reminderHour.toString().padStart(2, '0')}:${uiState.reminderMinute.toString().padStart(2, '0')}",
+                onClick = { showTimePickerDialog = true }
             )
         }
         Spacer(modifier = Modifier.height(20.dp))
@@ -258,27 +273,56 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Filled.Info,
                 title = "版本",
-                subtitle = "1.0.0",
-                onClick = { Toast.makeText(context, "功能开发中", Toast.LENGTH_SHORT).show() }
+                subtitle = "1.0.0"
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AutoAwesome,
                 title = "xx memory",
-                subtitle = "通用智能记忆助手",
-                onClick = { Toast.makeText(context, "功能开发中", Toast.LENGTH_SHORT).show() }
+                subtitle = "通用智能记忆助手"
             )
         }
         Spacer(modifier = Modifier.height(32.dp))
     }
+
+    if (showProfileDialog) {
+        ProfileEditDialog(
+            currentName = uiState.userName,
+            currentEmail = uiState.userEmail,
+            onDismiss = { showProfileDialog = false },
+            onConfirm = { name, email ->
+                viewModel.setUserName(name)
+                viewModel.setUserEmail(email)
+                showProfileDialog = false
+            }
+        )
+    }
+
+    if (showTimePickerDialog) {
+        TimePickerDialog(
+            currentHour = uiState.reminderHour,
+            currentMinute = uiState.reminderMinute,
+            onDismiss = { showTimePickerDialog = false },
+            onConfirm = { hour, minute ->
+                viewModel.setReminderTime(hour, minute)
+                showTimePickerDialog = false
+            }
+        )
+    }
 }
 
 @Composable
-private fun ProfileCard(userName: String, userEmail: String) {
+private fun ProfileCard(
+    userName: String,
+    userEmail: String,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -290,32 +334,140 @@ private fun ProfileCard(userName: String, userEmail: String) {
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(Primary),
+                    .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = userName.take(1),
                     style = MaterialTheme.typography.headlineMedium,
-                    color = androidx.compose.ui.graphics.Color.White,
+                    color = MaterialTheme.colorScheme.surface,
                     fontWeight = FontWeight.Bold
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = userName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = userEmail,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.outline
+            )
         }
     }
+}
+
+@Composable
+private fun ProfileEditDialog(
+    currentName: String,
+    currentEmail: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
+    var name by remember { mutableStateOf(currentName) }
+    var email by remember { mutableStateOf(currentEmail) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("编辑个人信息", fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("昵称") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("邮箱") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(name.trim(), email.trim()) },
+                enabled = name.isNotBlank()
+            ) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
+}
+
+@Composable
+private fun TimePickerDialog(
+    currentHour: Int,
+    currentMinute: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, Int) -> Unit
+) {
+    var hour by remember { mutableStateOf(currentHour.toString()) }
+    var minute by remember { mutableStateOf(currentMinute.toString().padStart(2, '0')) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("设置提醒时间", fontWeight = FontWeight.Bold) },
+        text = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = hour,
+                    onValueChange = { value ->
+                        hour = value.filter { it.isDigit() }.take(2)
+                    },
+                    label = { Text("时") },
+                    modifier = Modifier.width(80.dp),
+                    singleLine = true
+                )
+                Text(":", style = MaterialTheme.typography.headlineSmall)
+                OutlinedTextField(
+                    value = minute,
+                    onValueChange = { value ->
+                        minute = value.filter { it.isDigit() }.take(2)
+                    },
+                    label = { Text("分") },
+                    modifier = Modifier.width(80.dp),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val h = hour.toIntOrNull()?.coerceIn(0, 23) ?: currentHour
+                    val m = minute.toIntOrNull()?.coerceIn(0, 59) ?: currentMinute
+                    onConfirm(h, m)
+                }
+            ) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
 }
 
 @Composable
@@ -324,7 +476,7 @@ private fun SectionTitle(title: String) {
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
-        color = TextSecondary
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
@@ -333,7 +485,7 @@ private fun SettingsCard(content: @Composable () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         content()
     }
@@ -357,7 +509,7 @@ private fun SettingsItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Primary,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -365,13 +517,13 @@ private fun SettingsItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             if (subtitle.isNotEmpty()) {
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -381,7 +533,7 @@ private fun SettingsItem(
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = TextTertiary,
+                tint = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -405,7 +557,7 @@ private fun SwitchItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Primary,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -413,13 +565,13 @@ private fun SwitchItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             if (subtitle.isNotEmpty()) {
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -427,8 +579,8 @@ private fun SwitchItem(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Primary,
-                checkedTrackColor = PrimaryLight
+                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
             )
         )
     }

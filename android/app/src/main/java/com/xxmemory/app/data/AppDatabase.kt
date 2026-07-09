@@ -26,8 +26,10 @@ abstract class AppDatabase : RoomDatabase() {
         private var INSTANCE: AppDatabase? = null
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                database.execSQL("CREATE INDEX IF NOT EXISTS index_review_date ON review_logs(review_date)")
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // ReviewLog entity defines both card_id and review_date indices.
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_card_id ON review_logs(card_id)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_review_date ON review_logs(review_date)")
             }
         }
 

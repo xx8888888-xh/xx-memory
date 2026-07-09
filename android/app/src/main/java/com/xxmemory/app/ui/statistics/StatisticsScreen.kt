@@ -35,15 +35,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.xxmemory.app.ui.theme.Background
-import com.xxmemory.app.ui.theme.Info
-import com.xxmemory.app.ui.theme.Primary
-import com.xxmemory.app.ui.theme.PrimaryLight
-import com.xxmemory.app.ui.theme.Success
-import com.xxmemory.app.ui.theme.Surface
-import com.xxmemory.app.ui.theme.TextPrimary
-import com.xxmemory.app.ui.theme.TextSecondary
-import com.xxmemory.app.ui.theme.Warning
 
 @Composable
 fun StatisticsScreen(
@@ -56,7 +47,7 @@ fun StatisticsScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = Primary)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -64,14 +55,14 @@ fun StatisticsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         Text(
             text = "学习统计",
             style = MaterialTheme.typography.headlineLarge,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(20.dp))
@@ -88,19 +79,19 @@ fun StatisticsScreen(
             StatCard(
                 title = "今日复习",
                 value = "${uiState.todayReviewed}",
-                color = Primary,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
                 title = "总复习数",
                 value = "${uiState.totalReviewed}",
-                color = Success,
+                color = MaterialTheme.colorScheme.tertiary,
                 modifier = Modifier.weight(1f)
             )
             StatCard(
                 title = "总卡片数",
                 value = "${uiState.totalCards}",
-                color = Warning,
+                color = MaterialTheme.colorScheme.secondary,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -114,7 +105,7 @@ fun StatisticsScreen(
         Text(
             text = "科目掌握度",
             style = MaterialTheme.typography.titleMedium,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -133,7 +124,7 @@ private fun StreakRing(streakDays: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -148,22 +139,22 @@ private fun StreakRing(streakDays: Int) {
                 CircularProgressIndicator(
                     progress = (streakDays % 7) / 7f,
                     modifier = Modifier.size(80.dp),
-                    color = Warning,
-                    trackColor = Warning.copy(alpha = 0.15f),
+                    color = MaterialTheme.colorScheme.secondary,
+                    trackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
                     strokeWidth = 8.dp
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         imageVector = Icons.Filled.LocalFireDepartment,
                         contentDescription = null,
-                        tint = Warning,
+                        tint = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
                         text = "$streakDays",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -173,18 +164,18 @@ private fun StreakRing(streakDays: Int) {
                     text = "连续学习",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${streakDays} 天",
                     style = MaterialTheme.typography.headlineLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Warning
+                    color = MaterialTheme.colorScheme.secondary
                 )
                 Text(
                     text = "保持下去！",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -201,7 +192,7 @@ private fun StatCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier
@@ -218,7 +209,7 @@ private fun StatCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -229,14 +220,14 @@ private fun WeeklyTrendChart(weeklyStats: List<WeeklyDayStat>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = "本周学习趋势",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -255,7 +246,7 @@ private fun WeeklyTrendChart(weeklyStats: List<WeeklyDayStat>) {
                         Text(
                             text = "${stat.count}",
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Box(
@@ -263,13 +254,13 @@ private fun WeeklyTrendChart(weeklyStats: List<WeeklyDayStat>) {
                                 .width(24.dp)
                                 .height(((stat.count.toFloat() / maxCount) * 80).dp.coerceAtLeast(4.dp))
                                 .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .background(Primary)
+                                .background(MaterialTheme.colorScheme.primary)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = stat.dayName,
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -283,7 +274,7 @@ private fun SubjectMasteryBar(subject: SubjectMastery) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -294,12 +285,12 @@ private fun SubjectMasteryBar(subject: SubjectMastery) {
                     text = subject.subject,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "${subject.masteredCards}/${subject.totalCards}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -309,8 +300,8 @@ private fun SubjectMasteryBar(subject: SubjectMastery) {
                     .fillMaxWidth()
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                color = Primary,
-                trackColor = PrimaryLight.copy(alpha = 0.3f)
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
             )
         }
     }

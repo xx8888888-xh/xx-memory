@@ -1,5 +1,8 @@
 package com.xxmemory.app.ui.settings
 
+import android.app.AlarmManager
+import android.content.Context
+import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.ViewModel
 import com.xxmemory.app.XxMemoryApplication
@@ -18,6 +21,8 @@ data class SettingsUiState(
     val shuffleCards: Boolean = false,
     val showDetailFirst: Boolean = false,
     val algorithmType: String = "SM-2",
+    val reminderHour: Int = 20,
+    val reminderMinute: Int = 0,
     val userName: String = "用户",
     val userEmail: String = "user@example.com"
 )
@@ -42,6 +47,8 @@ class SettingsViewModel : ViewModel() {
             shuffleCards = settingsManager.shuffleCards,
             showDetailFirst = settingsManager.showDetailFirst,
             algorithmType = settingsManager.algorithmType,
+            reminderHour = settingsManager.reminderHour,
+            reminderMinute = settingsManager.reminderMinute,
             userName = settingsManager.userName,
             userEmail = settingsManager.userEmail
         )
@@ -57,14 +64,22 @@ class SettingsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(syncEnabled = enabled)
     }
 
-    fun toggleDailyReminder(enabled: Boolean) {
+    fun toggleDailyReminder(enabled: Boolean): Boolean {
         val context = XxMemoryApplication.instance
         if (enabled) {
             val notificationManager = NotificationManagerCompat.from(context)
             if (!notificationManager.areNotificationsEnabled()) {
                 _uiState.value = _uiState.value.copy(dailyReminder = false)
                 settingsManager.dailyReminder = false
-                return
+                return false
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                if (!alarmManager.canScheduleExactAlarms()) {
+                    _uiState.value = _uiState.value.copy(dailyReminder = false)
+                    settingsManager.dailyReminder = false
+                    return false
+                }
             }
         }
         settingsManager.dailyReminder = enabled
@@ -74,6 +89,7 @@ class SettingsViewModel : ViewModel() {
         } else {
             NotificationScheduler.cancelDailyReminder(context)
         }
+        return true
     }
 
     fun toggleAutoPlay(enabled: Boolean) {
@@ -92,12 +108,37 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun setDailyCardLimit(limit: Int) {
-        settingsManager.dailyCardLimit = limit
-        _uiState.value = _uiState.value.copy(dailyCardLimit = limit)
+        val clamped = limit.coerceIn(5, 100)
+        settingsManager.dailyCardLimit = clamped
+        _uiState.value = _uiState.value.copy(dailyCardLimit = clamped)
     }
 
     fun setAlgorithmType(type: String) {
         settingsManager.algorithmType = type
         _uiState.value = _uiState.value.copy(algorithmType = type)
+    }
+
+    fun setReminderTime(hour: Int, minute: Int) {
+        val clampedHour = hour.coerceIn(0, 23)
+        val clampedMinute = minute.coerceIn(0, 59)
+        settingsManager.reminderHour = clampedHour
+        settingsManager.reminderMinute = clampedMinute
+        _uiState.value = _uiState.value.copy(
+            reminderHour = clampedHour,
+            reminderMinute = clampedMinute
+        )
+        if (settingsManager.dailyReminder) {
+            NotificationScheduler.scheduleDailyReminder(XxMemoryApplication.instance)
+        }
+    }
+
+    fun setUserName(name: String) {
+        settingsManager.userName = name
+        _uiState.value = _uiState.value.copy(userName = name)
+    }
+
+    fun setUserEmail(email: String) {
+        settingsManager.userEmail = email
+        _uiState.value = _uiState.value.copy(userEmail = email)
     }
 }

@@ -12,7 +12,9 @@ interface MemoryAlgorithm {
         val nextInterval: Int,
         val nextEaseFactor: Float,
         val nextRepetitions: Int,
-        val nextReviewDate: Long
+        val nextReviewDate: Long,
+        /** FSRS difficulty [1,10]; 0 means N/A (SM2/Ebbinghaus). */
+        val nextDifficulty: Double = 0.0
     )
 
     fun calculate(
@@ -240,7 +242,8 @@ object FsrsAlgorithm : MemoryAlgorithm {
             nextInterval = nextInterval,
             nextEaseFactor = newEaseFactor,
             nextRepetitions = newRepetitions,
-            nextReviewDate = EbbinghausAlgorithm.getNextDayTimestamp(nextInterval)
+            nextReviewDate = EbbinghausAlgorithm.getNextDayTimestamp(nextInterval),
+            nextDifficulty = newDifficulty
         )
     }
 
