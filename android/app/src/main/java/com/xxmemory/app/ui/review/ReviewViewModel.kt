@@ -35,6 +35,9 @@ class ReviewViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
 
+    @Volatile
+    private var isAssessing = false
+
     init {
         val db = AppDatabase.getInstance(XxMemoryApplication.instance)
         repository = CardRepository(db.cardDao(), db.reviewLogDao())
@@ -81,54 +84,60 @@ class ReviewViewModel : ViewModel() {
     }
 
     fun assessCard(quality: Int) {
+        if (isAssessing) return
+        isAssessing = true
         val state = _uiState.value
-        val card = state.currentCard ?: return
+        val card = state.currentCard ?: run { isAssessing = false; return }
 
         viewModelScope.launch {
-            val algorithm = EbbinghausAlgorithm.getAlgorithm(settingsManager.algorithmType)
-            val result = algorithm.calculate(
-                quality = quality,
-                repetitions = card.repetitions,
-                easeFactor = card.easeFactor,
-                currentInterval = card.interval
-            )
-
-            val updatedCard = card.copy(
-                repetitions = result.nextRepetitions,
-                easeFactor = result.nextEaseFactor,
-                interval = result.nextInterval,
-                nextReviewDate = result.nextReviewDate
-            )
-            repository.updateCard(updatedCard)
-
-            val log = ReviewLog(
-                cardId = card.id,
-                quality = quality,
-                reviewDate = System.currentTimeMillis(),
-                nextInterval = result.nextInterval
-            )
-            repository.insertReviewLog(log)
-
-            val nextIndex = state.currentIndex + 1
-            if (nextIndex >= state.cards.size) {
-                _uiState.value = state.copy(
-                    isComplete = true,
-                    completedCount = state.completedCount + 1,
-                    currentCard = null,
-                    isFlipped = false,
-                    nextScheduleInfo = null
+            try {
+                val algorithm = EbbinghausAlgorithm.getAlgorithm(settingsManager.algorithmType)
+                val result = algorithm.calculate(
+                    quality = quality,
+                    repetitions = card.repetitions,
+                    easeFactor = card.easeFactor,
+                    currentInterval = card.interval
                 )
-            } else {
-                val nextCard = state.cards[nextIndex]
-                _uiState.value = state.copy(
-                    currentIndex = nextIndex,
-                    currentCard = nextCard,
-                    isFlipped = false,
-                    currentNumber = nextIndex + 1,
-                    progress = (nextIndex + 1).toFloat() / state.cards.size,
-                    completedCount = state.completedCount + 1,
-                    nextScheduleInfo = "下次复习: ${getIntervalText(result.nextInterval)}"
+
+                val updatedCard = card.copy(
+                    repetitions = result.nextRepetitions,
+                    easeFactor = result.nextEaseFactor,
+                    interval = result.nextInterval,
+                    nextReviewDate = result.nextReviewDate
                 )
+                repository.updateCard(updatedCard)
+
+                val log = ReviewLog(
+                    cardId = card.id,
+                    quality = quality,
+                    reviewDate = System.currentTimeMillis(),
+                    nextInterval = result.nextInterval
+                )
+                repository.insertReviewLog(log)
+
+                val nextIndex = state.currentIndex + 1
+                if (nextIndex >= state.cards.size) {
+                    _uiState.value = state.copy(
+                        isComplete = true,
+                        completedCount = state.completedCount + 1,
+                        currentCard = null,
+                        isFlipped = false,
+                        nextScheduleInfo = null
+                    )
+                } else {
+                    val nextCard = state.cards[nextIndex]
+                    _uiState.value = state.copy(
+                        currentIndex = nextIndex,
+                        currentCard = nextCard,
+                        isFlipped = false,
+                        currentNumber = nextIndex + 1,
+                        progress = (nextIndex + 1).toFloat() / state.cards.size,
+                        completedCount = state.completedCount + 1,
+                        nextScheduleInfo = "下次复习: ${getIntervalText(result.nextInterval)}"
+                    )
+                }
+            } finally {
+                isAssessing = false
             }
         }
     }

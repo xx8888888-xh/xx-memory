@@ -189,8 +189,8 @@ fun ImportScreen(
     if (showManualDialog) {
         ManualCardDialog(
             onDismiss = { showManualDialog = false },
-            onConfirm = { q, a, s, d ->
-                viewModel.importManualCard(q, a, s, d)
+            onConfirm = { q, a, s, d, t ->
+                viewModel.importManualCard(q, a, s, d, t)
                 showManualDialog = false
             }
         )
@@ -244,7 +244,7 @@ private fun FileImportSection(viewModel: ImportViewModel) {
                     color = TextPrimary
                 )
                 Text(
-                    text = "支持 JSON, CSV, TXT 格式",
+                    text = "支持 JSON, CSV, TXT, Markdown 格式",
                     style = MaterialTheme.typography.bodySmall,
                     color = TextSecondary
                 )
@@ -395,42 +395,52 @@ private fun AiSkillSection(viewModel: ImportViewModel) {
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun FormatChipsSection() {
-    var selectedFormat by remember { mutableStateOf("JSON") }
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        FilterChip(
-            selected = selectedFormat == "JSON",
-            onClick = { selectedFormat = "JSON" },
-            label = { Text("JSON") },
-            colors = FilterChipDefaults.filterChipColors(
-                containerColor = Outline.copy(alpha = 0.3f)
+    var selectedFormat by remember { mutableStateOf<String?>(null) }
+    Column {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selectedFormat == "JSON",
+                onClick = { selectedFormat = if (selectedFormat == "JSON") null else "JSON" },
+                label = { Text("JSON") },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Outline.copy(alpha = 0.3f)
+                )
             )
-        )
-        FilterChip(
-            selected = selectedFormat == "CSV",
-            onClick = { selectedFormat = "CSV" },
-            label = { Text("CSV") },
-            colors = FilterChipDefaults.filterChipColors(
-                containerColor = Outline.copy(alpha = 0.3f)
+            FilterChip(
+                selected = selectedFormat == "CSV",
+                onClick = { selectedFormat = if (selectedFormat == "CSV") null else "CSV" },
+                label = { Text("CSV") },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Outline.copy(alpha = 0.3f)
+                )
             )
-        )
-        FilterChip(
-            selected = selectedFormat == "Anki",
-            onClick = { selectedFormat = "Anki" },
-            label = { Text("Anki") },
-            colors = FilterChipDefaults.filterChipColors(
-                containerColor = Outline.copy(alpha = 0.3f)
+            FilterChip(
+                selected = selectedFormat == "TXT",
+                onClick = { selectedFormat = if (selectedFormat == "TXT") null else "TXT" },
+                label = { Text("TXT") },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Outline.copy(alpha = 0.3f)
+                )
             )
-        )
-        FilterChip(
-            selected = selectedFormat == "Markdown",
-            onClick = { selectedFormat = "Markdown" },
-            label = { Text("Markdown") },
-            colors = FilterChipDefaults.filterChipColors(
-                containerColor = Outline.copy(alpha = 0.3f)
+            FilterChip(
+                selected = selectedFormat == "Markdown",
+                onClick = { selectedFormat = if (selectedFormat == "Markdown") null else "Markdown" },
+                label = { Text("Markdown") },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Outline.copy(alpha = 0.3f)
+                )
             )
-        )
+        }
+        if (selectedFormat != null) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "已选择格式: $selectedFormat",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+        }
     }
 }
 
@@ -484,15 +494,17 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun ManualCardDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String, String) -> Unit
 ) {
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
     var subject by remember { mutableStateOf("") }
     var detail by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf(Card.TYPE_QA) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -532,11 +544,52 @@ private fun ManualCardDialog(
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2
                 )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "卡片类型",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextSecondary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedType == Card.TYPE_QA,
+                        onClick = { selectedType = Card.TYPE_QA },
+                        label = { Text("问答卡") }
+                    )
+                    FilterChip(
+                        selected = selectedType == Card.TYPE_FILL_BLANK,
+                        onClick = { selectedType = Card.TYPE_FILL_BLANK },
+                        label = { Text("填空卡") }
+                    )
+                    FilterChip(
+                        selected = selectedType == Card.TYPE_CODE,
+                        onClick = { selectedType = Card.TYPE_CODE },
+                        label = { Text("代码片段") }
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = selectedType == Card.TYPE_IMAGE,
+                        onClick = { selectedType = Card.TYPE_IMAGE },
+                        label = { Text("图片卡") }
+                    )
+                    FilterChip(
+                        selected = selectedType == Card.TYPE_AUDIO,
+                        onClick = { selectedType = Card.TYPE_AUDIO },
+                        label = { Text("音频卡") }
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(question, answer, subject, detail) },
+                onClick = { onConfirm(question, answer, subject, detail, selectedType) },
                 enabled = question.isNotBlank() && answer.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = Primary)
             ) {

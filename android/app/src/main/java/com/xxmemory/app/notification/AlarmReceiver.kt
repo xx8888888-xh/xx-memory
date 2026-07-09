@@ -8,6 +8,7 @@ import com.xxmemory.app.domain.Scheduler
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val pendingResult = goAsync()
         val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
         val wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "xxmemory:alarm")
         wakeLock.acquire(10_000)
@@ -15,6 +16,7 @@ class AlarmReceiver : BroadcastReceiver() {
             Scheduler.scheduleReviewReminder(context)
         } finally {
             if (wakeLock.isHeld) wakeLock.release()
+            pendingResult.finish()
         }
     }
 }

@@ -3,6 +3,9 @@ package com.xxmemory.app.domain
 import android.util.Log
 import java.util.Calendar
 
+@Deprecated("Use MemoryAlgorithm.ScheduleResult", ReplaceWith("MemoryAlgorithm.ScheduleResult"))
+typealias ScheduleResult = MemoryAlgorithm.ScheduleResult
+
 object EbbinghausAlgorithm {
 
     fun getAlgorithm(type: String): MemoryAlgorithm {
@@ -22,7 +25,7 @@ object EbbinghausAlgorithm {
         repetitions: Int,
         easeFactor: Float,
         currentInterval: Int
-    ): ScheduleResult {
+    ): MemoryAlgorithm.ScheduleResult {
         return SM2Algorithm.calculate(quality, repetitions, easeFactor, currentInterval)
     }
 
@@ -35,11 +38,4 @@ object EbbinghausAlgorithm {
         cal.set(Calendar.MILLISECOND, 0)
         return cal.timeInMillis
     }
-
-    data class ScheduleResult(
-        val nextInterval: Int,
-        val nextEaseFactor: Float,
-        val nextRepetitions: Int,
-        val nextReviewDate: Long
-    )
 }

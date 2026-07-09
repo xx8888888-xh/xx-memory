@@ -46,6 +46,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -138,9 +141,11 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
+                var sliderValue by remember { mutableFloatStateOf(uiState.dailyCardLimit.toFloat()) }
                 Slider(
-                    value = uiState.dailyCardLimit.toFloat(),
-                    onValueChange = { viewModel.setDailyCardLimit(it.toInt()) },
+                    value = sliderValue,
+                    onValueChange = { sliderValue = it },
+                    onValueChangeFinished = { viewModel.setDailyCardLimit(sliderValue.toInt()) },
                     valueRange = 5f..100f,
                     steps = 18,
                     colors = SliderDefaults.colors(

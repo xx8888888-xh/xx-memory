@@ -21,6 +21,7 @@ data class Card(
     @ColumnInfo(name = "subject")
     val subject: String = "",
 
+    /** SM-2 算法的 EF (Easiness Factor)，范围 1.3-2.5。FSRS 算法复用此字段存储难度值 */
     @ColumnInfo(name = "difficulty")
     val difficulty: Float = 0f,
 
@@ -53,4 +54,12 @@ data class Card(
 
     @ColumnInfo(name = "is_favorite")
     val isFavorite: Boolean = false
-)
+) {
+    companion object {
+        const val TYPE_QA = "qa"
+        const val TYPE_FILL_BLANK = "fill_blank"
+        const val TYPE_CODE = "code"
+        const val TYPE_IMAGE = "image"
+        const val TYPE_AUDIO = "audio"
+    }
+}

@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.xxmemory.app.R
 import com.xxmemory.app.XxMemoryApplication
@@ -30,6 +31,10 @@ object Scheduler {
             val dueCount = db.cardDao().getDueCount(startOfDay).first()
 
             if (dueCount > 0) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    if (!nm.areNotificationsEnabled()) return@launch
+                }
                 showDueNotification(context, dueCount)
             }
         }

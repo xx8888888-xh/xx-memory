@@ -8,12 +8,19 @@ import kotlin.math.roundToInt
  * All algorithms implement this interface for interchangeable use.
  */
 interface MemoryAlgorithm {
+    data class ScheduleResult(
+        val nextInterval: Int,
+        val nextEaseFactor: Float,
+        val nextRepetitions: Int,
+        val nextReviewDate: Long
+    )
+
     fun calculate(
         quality: Int,
         repetitions: Int,
         easeFactor: Float,
         currentInterval: Int
-    ): EbbinghausAlgorithm.ScheduleResult
+    ): ScheduleResult
 
     val name: String
     val description: String
@@ -44,12 +51,12 @@ object SM2Algorithm : MemoryAlgorithm {
         repetitions: Int,
         easeFactor: Float,
         currentInterval: Int
-    ): EbbinghausAlgorithm.ScheduleResult {
+    ): MemoryAlgorithm.ScheduleResult {
         val clampedQuality = quality.coerceIn(0, 3)
         val mappedQuality = mapQualityToSm2(clampedQuality)
 
         if (mappedQuality < 2) {
-            return EbbinghausAlgorithm.ScheduleResult(
+            return MemoryAlgorithm.ScheduleResult(
                 nextInterval = 1,
                 nextEaseFactor = easeFactor.coerceAtLeast(MIN_EASE_FACTOR),
                 nextRepetitions = 0,
@@ -77,7 +84,7 @@ object SM2Algorithm : MemoryAlgorithm {
             }
         }
 
-        return EbbinghausAlgorithm.ScheduleResult(
+        return MemoryAlgorithm.ScheduleResult(
             nextInterval = nextInterval.coerceAtLeast(1),
             nextEaseFactor = newEaseFactor,
             nextRepetitions = nextRepetitions,
@@ -124,11 +131,11 @@ object EbbinghausFixedAlgorithm : MemoryAlgorithm {
         repetitions: Int,
         easeFactor: Float,
         currentInterval: Int
-    ): EbbinghausAlgorithm.ScheduleResult {
+    ): MemoryAlgorithm.ScheduleResult {
         val clampedQuality = quality.coerceIn(0, 3)
 
         if (clampedQuality < 2) {
-            return EbbinghausAlgorithm.ScheduleResult(
+            return MemoryAlgorithm.ScheduleResult(
                 nextInterval = fixedIntervals[0],
                 nextEaseFactor = easeFactor,
                 nextRepetitions = 0,
@@ -139,7 +146,7 @@ object EbbinghausFixedAlgorithm : MemoryAlgorithm {
         val nextIndex = repetitions.coerceAtMost(fixedIntervals.size - 1)
         val nextInterval = fixedIntervals[nextIndex]
 
-        return EbbinghausAlgorithm.ScheduleResult(
+        return MemoryAlgorithm.ScheduleResult(
             nextInterval = nextInterval,
             nextEaseFactor = easeFactor,
             nextRepetitions = repetitions + 1,
@@ -194,7 +201,7 @@ object FsrsAlgorithm : MemoryAlgorithm {
         repetitions: Int,
         easeFactor: Float,
         currentInterval: Int
-    ): EbbinghausAlgorithm.ScheduleResult {
+    ): MemoryAlgorithm.ScheduleResult {
         val grade = quality.coerceIn(0, 3) + 1
 
         val isNew = repetitions == 0 || currentInterval == 0
@@ -229,7 +236,7 @@ object FsrsAlgorithm : MemoryAlgorithm {
         val newRepetitions = if (grade <= 1) 0 else repetitions + 1
         val newEaseFactor = difficultyToEaseFactor(newDifficulty)
 
-        return EbbinghausAlgorithm.ScheduleResult(
+        return MemoryAlgorithm.ScheduleResult(
             nextInterval = nextInterval,
             nextEaseFactor = newEaseFactor,
             nextRepetitions = newRepetitions,

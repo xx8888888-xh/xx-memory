@@ -41,7 +41,7 @@ interface CardDao {
     @Update
     suspend fun updateCard(card: Card)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertCard(card: Card): Long
 
     @Query("SELECT DISTINCT subject FROM cards WHERE subject != ''")

@@ -329,8 +329,8 @@ private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int) 
                 modifier = Modifier.size(64.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val progress = if (totalCards > 0) {
-                    (totalCards - dueCount).toFloat() / totalCards
+                val progress = if (todayReviewed + dueCount > 0) {
+                    todayReviewed.toFloat() / (todayReviewed + dueCount)
                 } else 0f
                 CircularProgressIndicator(
                     progress = progress,
@@ -434,6 +434,19 @@ private fun DueCardItem(card: Card, onCardClick: () -> Unit = {}) {
                         color = Primary
                     )
                 }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = when(card.cardType) {
+                        Card.TYPE_QA -> "问答"
+                        Card.TYPE_FILL_BLANK -> "填空"
+                        Card.TYPE_CODE -> "代码"
+                        Card.TYPE_IMAGE -> "图片"
+                        Card.TYPE_AUDIO -> "音频"
+                        else -> card.cardType
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
             Icon(
                 imageVector = Icons.Filled.ChevronRight,

@@ -26,3 +26,22 @@ screenshot*.png
 test_*.png
 ui_*.xml
 sdk_*.txt
+
+# 构建产物
+*.apk
+*.aab
+*.ap_
+
+# 签名密钥
+*.keystore
+*.jks
+
+# Release 输出
+app/release/
+
+# 系统文件
+.DS_Store
+
+# 调试文件
+captures/
+*.hprof

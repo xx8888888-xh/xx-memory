@@ -41,7 +41,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import com.xxmemory.app.data.entity.Card as CardEntity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -189,13 +191,59 @@ fun ReviewScreen(
                                     .background(PrimaryLight.copy(alpha = 0.5f))
                             )
                             Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                text = card.answer,
-                                style = MaterialTheme.typography.headlineMedium,
-                                color = TextPrimary,
-                                fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
-                            )
+                            when (card.cardType) {
+                                CardEntity.TYPE_FILL_BLANK -> {
+                                    Text(
+                                        text = card.answer.replace("___", "_________"),
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        color = TextPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                CardEntity.TYPE_CODE -> {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp))
+                                            .padding(12.dp)
+                                    ) {
+                                        Text(
+                                            text = card.answer,
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = Color(0xFFD4D4D4),
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+                                }
+                                CardEntity.TYPE_IMAGE -> {
+                                    Text(
+                                        text = "图片内容",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        color = TextPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                CardEntity.TYPE_AUDIO -> {
+                                    Text(
+                                        text = "音频内容",
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        color = TextPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                                else -> {
+                                    Text(
+                                        text = card.answer,
+                                        style = MaterialTheme.typography.headlineMedium,
+                                        color = TextPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
                             if (card.detail.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
                                 Text(

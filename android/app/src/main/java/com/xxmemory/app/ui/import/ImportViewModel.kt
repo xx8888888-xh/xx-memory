@@ -8,6 +8,10 @@ import com.xxmemory.app.data.AppDatabase
 import com.xxmemory.app.data.entity.Card
 import com.xxmemory.app.data.repository.CardRepository
 import com.xxmemory.app.XxMemoryApplication
+import com.xxmemory.app.domain.parser.DocumentParser
+import com.xxmemory.app.domain.parser.CsvParser
+import com.xxmemory.app.domain.parser.MarkdownParser
+import com.xxmemory.app.domain.parser.TxtParser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +30,13 @@ class ImportViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(ImportUiState())
     val uiState: StateFlow<ImportUiState> = _uiState.asStateFlow()
+
+    private val parsers: Map<String, DocumentParser> = mapOf(
+        "md" to MarkdownParser(),
+        "markdown" to MarkdownParser(),
+        "csv" to CsvParser(),
+        "txt" to TxtParser()
+    )
 
     init {
         val db = AppDatabase.getInstance(XxMemoryApplication.instance)
@@ -59,7 +70,22 @@ class ImportViewModel : ViewModel() {
                     return@launch
                 }
 
-                importFromJson(content)
+                val extension = uri.lastPathSegment?.substringAfterLast('.', "")?.lowercase() ?: ""
+                val parser = parsers[extension]
+                if (parser != null) {
+                    val cards = parser.parse(content)
+                    for (card in cards) {
+                        repository.insertCard(card)
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        isImporting = false,
+                        importMessage = "成功导入 ${cards.size} 张卡片 (${parser.formatName}格式)",
+                        urlInput = ""
+                    )
+                    loadRecentImports()
+                } else {
+                    importFromJson(content)
+                }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isImporting = false,
@@ -112,7 +138,7 @@ class ImportViewModel : ViewModel() {
         }
     }
 
-    fun importManualCard(question: String, answer: String, subject: String, detail: String) {
+    fun importManualCard(question: String, answer: String, subject: String, detail: String, cardType: String = Card.TYPE_QA) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isImporting = true, importMessage = null)
             try {
@@ -121,7 +147,7 @@ class ImportViewModel : ViewModel() {
                     answer = answer,
                     subject = subject,
                     detail = detail,
-                    cardType = "qa"
+                    cardType = cardType
                 )
                 repository.insertCard(card)
                 _uiState.value = _uiState.value.copy(
@@ -151,7 +177,9 @@ class ImportViewModel : ViewModel() {
             }
         } catch (e: Exception) {
             try {
-                val jsonObj = gson.fromJson(json, Map::class.java)
+                val mapType = object : com.google.gson.reflect.TypeToken<Map<String, Any>>() {}.type
+                val jsonObj: Map<String, Any>? = gson.fromJson(json, mapType)
+                if (jsonObj == null) throw Exception("JSON格式错误")
                 if (jsonObj.containsKey("cards")) {
                     val cardsArray = jsonObj["cards"] as? List<Map<String, Any>>
                     if (cardsArray != null) {
