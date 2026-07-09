@@ -14,9 +14,9 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("auto_play_audio", false)
         set(value) = prefs.edit().putBoolean("auto_play_audio", value).apply()
 
-    var darkMode: Boolean
-        get() = prefs.getBoolean("dark_mode", false)
-        set(value) = prefs.edit().putBoolean("dark_mode", value).apply()
+    var einkMode: Boolean
+        get() = prefs.getBoolean("eink_mode", false)
+        set(value) = prefs.edit().putBoolean("eink_mode", value).apply()
 
     var syncEnabled: Boolean
         get() = prefs.getBoolean("sync_enabled", false)

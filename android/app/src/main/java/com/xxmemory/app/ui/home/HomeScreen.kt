@@ -173,7 +173,7 @@ fun HomeScreen(
             }
         } else {
             items(filteredCards) { card ->
-                DueCardItem(card = card)
+                DueCardItem(card = card, onCardClick = onNavigateToReview)
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -403,11 +403,11 @@ private fun WeekCalendarStrip(weekStats: List<DayStat>) {
 }
 
 @Composable
-private fun DueCardItem(card: Card) {
+private fun DueCardItem(card: Card, onCardClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { },
+            .clickable { onCardClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Surface)
     ) {

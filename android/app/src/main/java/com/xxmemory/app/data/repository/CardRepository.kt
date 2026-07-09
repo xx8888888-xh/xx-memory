@@ -105,6 +105,7 @@ class CardRepository(
         fun getStartOfWeek(timestamp: Long): Long {
             val cal = Calendar.getInstance()
             cal.timeInMillis = timestamp
+            cal.firstDayOfWeek = Calendar.MONDAY
             cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
             cal.set(Calendar.HOUR_OF_DAY, 0)
             cal.set(Calendar.MINUTE, 0)

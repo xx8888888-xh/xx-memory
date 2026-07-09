@@ -49,9 +49,7 @@ class ImportViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isImporting = true, importMessage = null)
             try {
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val content = inputStream?.bufferedReader()?.readText() ?: ""
-                inputStream?.close()
+                val content = context.contentResolver.openInputStream(uri)?.use { it.bufferedReader().readText() } ?: ""
 
                 if (content.isBlank()) {
                     _uiState.value = _uiState.value.copy(
@@ -168,7 +166,7 @@ class ImportViewModel : ViewModel() {
                 throw e2
             }
         }
-        return cards
+        return cards.filter { it.question.isNotBlank() && it.answer.isNotBlank() }
     }
 
     private fun mapToCard(map: Map<*, *>): Card {

@@ -1,5 +1,6 @@
 package com.xxmemory.app.ui.settings
 
+import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.ViewModel
 import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.data.SettingsManager
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 data class SettingsUiState(
     val dailyCardLimit: Int = 20,
     val autoPlayAudio: Boolean = false,
-    val darkMode: Boolean = false,
+    val einkMode: Boolean = false,
     val syncEnabled: Boolean = false,
     val dailyReminder: Boolean = true,
     val shuffleCards: Boolean = false,
@@ -35,7 +36,7 @@ class SettingsViewModel : ViewModel() {
         _uiState.value = SettingsUiState(
             dailyCardLimit = settingsManager.dailyCardLimit,
             autoPlayAudio = settingsManager.autoPlayAudio,
-            darkMode = settingsManager.darkMode,
+            einkMode = settingsManager.einkMode,
             syncEnabled = settingsManager.syncEnabled,
             dailyReminder = settingsManager.dailyReminder,
             shuffleCards = settingsManager.shuffleCards,
@@ -46,9 +47,9 @@ class SettingsViewModel : ViewModel() {
         )
     }
 
-    fun toggleDarkMode(enabled: Boolean) {
-        settingsManager.darkMode = enabled
-        _uiState.value = _uiState.value.copy(darkMode = enabled)
+    fun toggleEinkMode(enabled: Boolean) {
+        settingsManager.einkMode = enabled
+        _uiState.value = _uiState.value.copy(einkMode = enabled)
     }
 
     fun toggleSync(enabled: Boolean) {
@@ -57,9 +58,17 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun toggleDailyReminder(enabled: Boolean) {
+        val context = XxMemoryApplication.instance
+        if (enabled) {
+            val notificationManager = NotificationManagerCompat.from(context)
+            if (!notificationManager.areNotificationsEnabled()) {
+                _uiState.value = _uiState.value.copy(dailyReminder = false)
+                settingsManager.dailyReminder = false
+                return
+            }
+        }
         settingsManager.dailyReminder = enabled
         _uiState.value = _uiState.value.copy(dailyReminder = enabled)
-        val context = XxMemoryApplication.instance
         if (enabled) {
             NotificationScheduler.scheduleDailyReminder(context)
         } else {

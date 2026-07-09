@@ -224,11 +224,7 @@ fun ReviewScreen(
                             .clip(CircleShape)
                             .background(PrimaryLight.copy(alpha = 0.2f))
                             .clickable {
-                                val text = if (uiState.isFlipped) {
-                                    card.answer
-                                } else {
-                                    card.question
-                                }
+                                val text = card.answer
                                 tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
                             },
                         contentAlignment = Alignment.Center

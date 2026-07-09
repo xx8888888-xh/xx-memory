@@ -395,36 +395,37 @@ private fun AiSkillSection(viewModel: ImportViewModel) {
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun FormatChipsSection() {
+    var selectedFormat by remember { mutableStateOf("JSON") }
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         FilterChip(
-            selected = false,
-            onClick = { },
+            selected = selectedFormat == "JSON",
+            onClick = { selectedFormat = "JSON" },
             label = { Text("JSON") },
             colors = FilterChipDefaults.filterChipColors(
                 containerColor = Outline.copy(alpha = 0.3f)
             )
         )
         FilterChip(
-            selected = false,
-            onClick = { },
+            selected = selectedFormat == "CSV",
+            onClick = { selectedFormat = "CSV" },
             label = { Text("CSV") },
             colors = FilterChipDefaults.filterChipColors(
                 containerColor = Outline.copy(alpha = 0.3f)
             )
         )
         FilterChip(
-            selected = false,
-            onClick = { },
+            selected = selectedFormat == "Anki",
+            onClick = { selectedFormat = "Anki" },
             label = { Text("Anki") },
             colors = FilterChipDefaults.filterChipColors(
                 containerColor = Outline.copy(alpha = 0.3f)
             )
         )
         FilterChip(
-            selected = false,
-            onClick = { },
+            selected = selectedFormat == "Markdown",
+            onClick = { selectedFormat = "Markdown" },
             label = { Text("Markdown") },
             colors = FilterChipDefaults.filterChipColors(
                 containerColor = Outline.copy(alpha = 0.3f)

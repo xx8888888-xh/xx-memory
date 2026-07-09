@@ -7,12 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import java.util.concurrent.atomic.AtomicInteger
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.xxmemory.app.MainActivity
 import com.xxmemory.app.XxMemoryApplication
 
 object NotificationHelper {
+
+    private val notificationIdCounter = AtomicInteger(0)
 
     fun showNotification(context: Context, title: String, message: String) {
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -38,11 +41,11 @@ object NotificationHelper {
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                manager.notify(System.currentTimeMillis().toInt(), builder.build())
+                manager.notify(notificationIdCounter.incrementAndGet(), builder.build())
             }
         } else {
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.notify(System.currentTimeMillis().toInt(), builder.build())
+            manager.notify(notificationIdCounter.incrementAndGet(), builder.build())
         }
     }
 }

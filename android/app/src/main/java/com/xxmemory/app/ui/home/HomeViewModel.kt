@@ -82,7 +82,7 @@ class HomeViewModel : ViewModel() {
                 totalCards = totalCards,
                 dueCount = dueCards.size,
                 todayReviewed = todayReviewed,
-                subjects = emptyList(),
+                subjects = _uiState.value.subjects,
                 selectedSubject = null,
                 weekStats = weekStats,
                 isLoading = false

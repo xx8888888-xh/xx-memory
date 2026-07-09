@@ -1,5 +1,6 @@
 package com.xxmemory.app.domain
 
+import android.util.Log
 import java.util.Calendar
 
 object EbbinghausAlgorithm {
@@ -8,7 +9,10 @@ object EbbinghausAlgorithm {
         return when (type) {
             "艾宾浩斯固定" -> EbbinghausFixedAlgorithm
             "FSRS" -> FsrsAlgorithm
-            else -> SM2Algorithm
+            else -> {
+                Log.w("EbbinghausAlgorithm", "未知算法类型: $type, 降级为SM-2")
+                SM2Algorithm
+            }
         }
     }
 

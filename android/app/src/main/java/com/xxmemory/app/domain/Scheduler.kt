@@ -9,8 +9,9 @@ import com.xxmemory.app.R
 import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.MainActivity
 import com.xxmemory.app.data.AppDatabase
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -24,9 +25,9 @@ object Scheduler {
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
 
-        CoroutineScope(Dispatchers.IO).launch {
+        GlobalScope.launch(Dispatchers.IO) {
             val db = AppDatabase.getInstance(context)
-            val dueCount = db.cardDao().getDueCardsList(startOfDay).size
+            val dueCount = db.cardDao().getDueCount(startOfDay).first()
 
             if (dueCount > 0) {
                 showDueNotification(context, dueCount)

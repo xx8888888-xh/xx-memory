@@ -1,5 +1,6 @@
 package com.xxmemory.app.ui.settings
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,9 +20,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -48,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -65,6 +67,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -93,7 +96,7 @@ fun SettingsScreen(
                 icon = Icons.Filled.Person,
                 title = "个人信息",
                 subtitle = uiState.userName,
-                onClick = { }
+                onClick = { Toast.makeText(context, "功能开发中", Toast.LENGTH_SHORT).show() }
             )
             Divider(color = PrimaryLight.copy(alpha = 0.2f))
             SettingsItem(
@@ -213,10 +216,11 @@ fun SettingsScreen(
         Spacer(modifier = Modifier.height(8.dp))
         SettingsCard {
             SwitchItem(
-                icon = Icons.Filled.DarkMode,
-                title = "深色模式",
-                checked = uiState.darkMode,
-                onCheckedChange = { viewModel.toggleDarkMode(it) }
+                icon = Icons.Filled.BrightnessMedium,
+                title = "墨水屏专用模式",
+                subtitle = "移除所有动画，使用黑白极简配色，适合电子墨水屏设备",
+                checked = uiState.einkMode,
+                onCheckedChange = { viewModel.toggleEinkMode(it) }
             )
             Divider(color = PrimaryLight.copy(alpha = 0.2f))
             SwitchItem(
@@ -250,14 +254,14 @@ fun SettingsScreen(
                 icon = Icons.Filled.Info,
                 title = "版本",
                 subtitle = "1.0.0",
-                onClick = { }
+                onClick = { Toast.makeText(context, "功能开发中", Toast.LENGTH_SHORT).show() }
             )
             Divider(color = PrimaryLight.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AutoAwesome,
                 title = "xx memory",
                 subtitle = "通用智能记忆助手",
-                onClick = { }
+                onClick = { Toast.makeText(context, "功能开发中", Toast.LENGTH_SHORT).show() }
             )
         }
         Spacer(modifier = Modifier.height(32.dp))

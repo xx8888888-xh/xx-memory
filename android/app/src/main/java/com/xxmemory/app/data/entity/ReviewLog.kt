@@ -16,7 +16,7 @@ import androidx.room.PrimaryKey
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["card_id"])]
+    indices = [Index(value = ["card_id"]), Index(value = ["review_date"])]
 )
 data class ReviewLog(
     @PrimaryKey(autoGenerate = true)

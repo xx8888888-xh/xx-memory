@@ -21,7 +21,7 @@ interface ReviewLogDao {
     @Query("SELECT COUNT(*) FROM review_logs WHERE review_date >= :startOfWeek AND review_date < :endOfWeek")
     suspend fun getWeekCount(startOfWeek: Long, endOfWeek: Long): Int
 
-    @Query("SELECT review_date FROM review_logs WHERE review_date >= :startOfWeek AND review_date < :endOfWeek GROUP BY review_date ORDER BY review_date")
+    @Query("SELECT review_date FROM review_logs WHERE review_date >= :startOfWeek AND review_date < :endOfWeek GROUP BY (review_date / 86400000) ORDER BY review_date")
     suspend fun getDailyReviewDates(startOfWeek: Long, endOfWeek: Long): List<Long>
 
     @Query("SELECT COUNT(*) FROM review_logs WHERE review_date >= :dayStart AND review_date < :dayEnd")

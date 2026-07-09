@@ -24,13 +24,3 @@ val ErrorContainer = Color(0xFFFFDAD6)
 val Success = Color(0xFF4CAF50)
 val Warning = Color(0xFFFF9800)
 val Info = Color(0xFF2196F3)
-
-// Dark mode colors
-val DarkBackground = Color(0xFF1A1A2E)
-val DarkSurface = Color(0xFF252540)
-val DarkSurfaceVariant = Color(0xFF2D2D4A)
-val DarkTextPrimary = Color(0xFFE8E0D8)
-val DarkTextSecondary = Color(0xFFA89E92)
-val DarkTextTertiary = Color(0xFF7A7064)
-val DarkOutline = Color(0xFF3A3A5A)
-val DarkOutlineVariant = Color(0xFF2E2E4E)
