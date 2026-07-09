@@ -1,0 +1,44 @@
+{
+  "cards": [
+    {
+      "question": "什么是艾宾浩斯遗忘曲线？",
+      "answer": "由德国心理学家Hermann Ebbinghaus于1885年提出的记忆衰减规律，描述了记忆随时间推移的遗忘速度。",
+      "detail": "艾宾浩斯使用无意义音节进行实验，发现遗忘在最初几天最快，之后逐渐减慢。",
+      "subject": "心理学",
+      "tags": "心理学,记忆,基础概念",
+      "isFavorite": true
+    },
+    {
+      "question": "FSRS算法的三参数模型是什么？",
+      "answer": "稳定性(S)、难度(D)、可提取性(R)三个参数构成的记忆模型。",
+      "detail": "S表示记忆强度，D表示卡片难度[1-10]，R表示在时间t时回忆起的概率。",
+      "subject": "算法",
+      "tags": "FSRS,算法,进阶",
+      "isFavorite": true
+    },
+    {
+      "question": "SM-2算法的quality评分范围是多少？",
+      "answer": "0-5，其中0表示完全忘记，5表示完美回忆。",
+      "detail": "应用内使用4级评分(0-3)，映射到SM-2的0-5标准评分。",
+      "subject": "算法",
+      "tags": "SM-2,算法,基础",
+      "isFavorite": false
+    },
+    {
+      "question": "间隔重复学习的核心原理是什么？",
+      "answer": "在记忆即将遗忘前进行复习，以最少的复习次数达到最佳的记忆保持效果。",
+      "detail": "通过算法预测最佳复习时间点，避免过度复习和遗忘。",
+      "subject": "学习方法",
+      "tags": "学习方法,记忆,核心原理",
+      "isFavorite": true
+    },
+    {
+      "question": "Anki软件使用什么算法？",
+      "answer": "Anki默认使用SM-2算法，也可通过插件切换为FSRS算法。",
+      "detail": "Anki是世界上最流行的开源间隔重复学习软件，支持多平台同步。",
+      "subject": "软件",
+      "tags": "Anki,软件,SM-2,FSRS",
+      "isFavorite": false
+    }
+  ]
+}

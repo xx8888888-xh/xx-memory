@@ -1,0 +1,66 @@
+﻿To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.4/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:clean
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors
+> Task :app:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:mergeDebugResources
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:compressDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:mergeDebugJniLibFolders
+> Task :app:mergeDebugNativeLibs NO-SOURCE
+> Task :app:checkDebugDuplicateClasses
+> Task :app:stripDebugDebugSymbols NO-SOURCE
+> Task :app:mergeLibDexDebug
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+> Task :app:mergeExtDexDebug
+> Task :app:kspDebugKotlin
+
+> Task :app:compileDebugKotlin
+w: file:///C:/Users/xx/Desktop/xx%20memory/android/app/src/main/java/com/xxmemory/app/ui/home/HomeViewModel.kt:59:17 Variable 'todayDayOfWeek' is never used
+w: file:///C:/Users/xx/Desktop/xx%20memory/android/app/src/main/java/com/xxmemory/app/ui/import/ImportScreen.kt:258:5 Parameter 'urlInput' is never used
+w: file:///C:/Users/xx/Desktop/xx%20memory/android/app/src/main/java/com/xxmemory/app/ui/import/ImportScreen.kt:259:5 Parameter 'onUrlChange' is never used
+w: file:///C:/Users/xx/Desktop/xx%20memory/android/app/src/main/java/com/xxmemory/app/ui/import/ImportScreen.kt:327:28 Parameter 'viewModel' is never used
+w: file:///C:/Users/xx/Desktop/xx%20memory/android/app/src/main/java/com/xxmemory/app/ui/import/ImportViewModel.kt:158:55 Unchecked cast: Any? to List<Map<String, Any>>
+w: file:///C:/Users/xx/Desktop/xx%20memory/android/app/src/main/java/com/xxmemory/app/ui/statistics/StatisticsViewModel.kt:53:17 Variable 'endOfWeek' is never used
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:processDebugJavaRes
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+[Incubating] Problems report is available at: file:///C:/Users/xx/Desktop/xx%20memory/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.4/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 1m 23s
+36 actionable tasks: 36 executed

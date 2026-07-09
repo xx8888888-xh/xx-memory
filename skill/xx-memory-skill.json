@@ -1,0 +1,95 @@
+{
+  "name": "xx-memory-document-parser",
+  "version": "1.0.0",
+  "description": "AI 文档解析与记忆卡片生成工作流，用于将外部文档自动转化为 xx memory 应用中的复习卡片。",
+  "workflow": {
+    "steps": [
+      {
+        "step": 1,
+        "name": "接收文档",
+        "description": "接收用户上传或粘贴的文档内容，以及可选的格式提示（JSON / CSV / TXT / Markdown）。",
+        "input": ["document_content", "document_format_hint"],
+        "output": ["raw_content", "detected_format"]
+      },
+      {
+        "step": 2,
+        "name": "解析结构",
+        "description": "根据检测到的格式策略，将原始内容解析为结构化数据。",
+        "input": ["raw_content", "detected_format"],
+        "output": ["structured_items"]
+      },
+      {
+        "step": 3,
+        "name": "提取问答对",
+        "description": "从结构化数据中识别问题（question）和答案（answer），并提取可选的 subject 与 detail。",
+        "input": ["structured_items"],
+        "output": ["qa_pairs"]
+      },
+      {
+        "step": 4,
+        "name": "生成卡片",
+        "description": "将问答对映射为 xx memory 的 Card 实体，确保 question 和 answer 非空。",
+        "input": ["qa_pairs"],
+        "output": ["cards"]
+      },
+      {
+        "step": 5,
+        "name": "提交入库",
+        "description": "将生成的卡片列表通过应用接口写入本地数据库，返回导入结果统计。",
+        "input": ["cards"],
+        "output": ["import_result"]
+      }
+    ]
+  },
+  "format_strategies": [
+    {
+      "format": "JSON",
+      "description": "标准 JSON 数组，每项包含 question、answer，可选 subject 和 detail。",
+      "example": {
+        "cards": [
+          {
+            "question": "Kotlin 中 data class 的作用是什么？",
+            "answer": "自动生成 equals、hashCode、toString、copy 和 componentN 函数。",
+            "subject": "Kotlin",
+            "detail": "适用于不可变数据模型。"
+          },
+          {
+            "question": "什么是协程？",
+            "answer": "轻量级线程，支持挂起和恢复，不会阻塞底层线程。",
+            "subject": "Kotlin"
+          }
+        ]
+      }
+    },
+    {
+      "format": "CSV",
+      "description": "CSV 表格，支持 question、answer、subject、detail 四列。第一行可以为标题行。",
+      "example": "question,answer,subject,detail\n\"什么是 JVM？\",\"Java 虚拟机，负责字节码的解释执行与内存管理。\",\"Java\",\"运行时核心组件\"\n\"什么是 GC？\",\"垃圾回收机制，自动释放不再使用的内存。\",\"Java\",\"内存管理\""
+    },
+    {
+      "format": "TXT",
+      "description": "纯文本段落。优先识别 Q: / A: 标记；若无标记，则按空行分割后两两配对。",
+      "example": "Q: 什么是依赖注入？\nA: 由外部容器负责创建和注入对象依赖，降低模块耦合。\n\nQ: 什么是单例模式？\nA: 确保一个类只有一个实例，并提供一个全局访问点。"
+    },
+    {
+      "format": "Markdown",
+      "description": "Markdown 文档。优先识别 # Q: / # A: 标记；若无标记，则以二级标题作为问题，后续段落作为答案。",
+      "example": "## 什么是 Room？\nRoom 是 Android 官方推荐的 SQLite ORM 框架，通过注解定义实体、DAO 和数据库。\n\n## 什么是 WorkManager？\nWorkManager 是 Android 后台任务调度库，支持可延迟、可约束的可靠任务执行。"
+    }
+  ],
+  "validation_rules": {
+    "required_fields": ["question", "answer"],
+    "filter_empty": true,
+    "trim_whitespace": true,
+    "max_question_length": 2000,
+    "max_answer_length": 10000
+  },
+  "api": {
+    "entry_point": "com.xxmemory.app.domain.parser.DocumentParser",
+    "implementations": [
+      "com.xxmemory.app.domain.parser.MarkdownParser",
+      "com.xxmemory.app.domain.parser.CsvParser",
+      "com.xxmemory.app.domain.parser.TxtParser"
+    ]
+  }
+}
