@@ -163,7 +163,10 @@ class ImportViewModel : ViewModel() {
         answer: String,
         subject: String,
         detail: String,
-        cardType: String = Card.TYPE_QA
+        cardType: String = Card.TYPE_QA,
+        tags: String = "",
+        imageUrl: String = "",
+        audioUrl: String = ""
     ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isImporting = true, importMessage = null)
@@ -173,7 +176,10 @@ class ImportViewModel : ViewModel() {
                     answer = answer,
                     subject = subject,
                     detail = detail,
-                    cardType = cardType
+                    cardType = cardType,
+                    tags = tags,
+                    imageUrl = imageUrl.takeIf { it.isNotBlank() },
+                    audioUrl = audioUrl.takeIf { it.isNotBlank() }
                 )
                 repository.insertCard(card)
                 _uiState.value = _uiState.value.copy(

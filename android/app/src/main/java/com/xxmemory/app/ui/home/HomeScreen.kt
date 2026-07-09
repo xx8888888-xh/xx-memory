@@ -1,6 +1,7 @@
 package com.xxmemory.app.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,11 +38,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.data.entity.Card
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,6 +57,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isEinkMode = remember { XxMemoryApplication.instance.settingsManager.einkMode }
 
     LazyColumn(
         modifier = Modifier
@@ -84,7 +88,8 @@ fun HomeScreen(
             ProgressSection(
                 totalCards = uiState.totalCards,
                 todayReviewed = uiState.todayReviewed,
-                dueCount = uiState.dueCount
+                dueCount = uiState.dueCount,
+                isEinkMode = isEinkMode
             )
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -164,7 +169,7 @@ fun HomeScreen(
             }
         } else {
             items(filteredCards) { card ->
-                DueCardItem(card = card, onCardClick = onNavigateToReview)
+                DueCardItem(card = card, isEinkMode = isEinkMode, onCardClick = onNavigateToReview)
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -191,7 +196,7 @@ private fun GreetingHeader() {
 
     Column {
         Text(
-            text = "$greeting 👋",
+            text = greeting,
             style = MaterialTheme.typography.headlineLarge,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold
@@ -304,7 +309,7 @@ private fun StartReviewButton(dueCount: Int, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int) {
+private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int, isEinkMode: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -323,19 +328,35 @@ private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int) 
                 val progress = if (todayReviewed + dueCount > 0) {
                     todayReviewed.toFloat() / (todayReviewed + dueCount)
                 } else 0f
-                CircularProgressIndicator(
-                    progress = progress,
-                    modifier = Modifier.size(64.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                    strokeWidth = 6.dp
-                )
-                Text(
-                    text = "${(progress * 100).toInt()}%",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
-                )
+                if (isEinkMode) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .border(6.dp, MaterialTheme.colorScheme.onSurface, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "${(progress * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    CircularProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.size(64.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        strokeWidth = 6.dp
+                    )
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
@@ -394,13 +415,14 @@ private fun WeekCalendarStrip(weekStats: List<DayStat>) {
 }
 
 @Composable
-private fun DueCardItem(card: Card, onCardClick: () -> Unit = {}) {
+private fun DueCardItem(card: Card, isEinkMode: Boolean, onCardClick: () -> Unit = {}) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCardClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -423,6 +445,14 @@ private fun DueCardItem(card: Card, onCardClick: () -> Unit = {}) {
                         text = card.subject,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                if (card.tags.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "标签: ${card.tags}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))

@@ -181,8 +181,8 @@ fun ImportScreen(
     if (showManualDialog) {
         ManualCardDialog(
             onDismiss = { showManualDialog = false },
-            onConfirm = { q, a, s, d, t ->
-                viewModel.importManualCard(q, a, s, d, t)
+            onConfirm = { q, a, s, d, t, img, aud ->
+                viewModel.importManualCard(q, a, s, d, t, img, aud)
                 showManualDialog = false
             }
         )
@@ -279,13 +279,13 @@ private fun UrlImportSection(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "从 URL / JSON 导入",
+                        text = "从 JSON 导入",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "粘贴 JSON 数据或链接",
+                        text = "粘贴 JSON 数据",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -316,12 +316,12 @@ private fun UrlImportSection(
 
 @Composable
 private fun AiSkillSection() {
-    var showAiMaterialTheme.colorScheme.tertiary by remember { mutableStateOf(false) }
+    var showAiDialog by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { showAiMaterialTheme.colorScheme.tertiary = true },
+            .clickable { showAiDialog = true },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -347,18 +347,18 @@ private fun AiSkillSection() {
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "AI 智能导入",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "拍照识别、网页提取、语音转文字",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+                    Text(
+                        text = "AI 智能导入",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "配合 AI Skill 文件使用，生成记忆卡片",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
@@ -367,15 +367,15 @@ private fun AiSkillSection() {
         }
     }
 
-    if (showAiMaterialTheme.colorScheme.tertiary) {
+    if (showAiDialog) {
         AlertDialog(
-            onDismissRequest = { showAiMaterialTheme.colorScheme.tertiary = false },
+            onDismissRequest = { showAiDialog = false },
             title = { Text("AI 智能导入", fontWeight = FontWeight.Bold) },
             text = {
-                Text("AI 智能导入功能需要将 AI Skill 文件上传至 AI 助手（如 TRAE）使用。\n\n支持的导入方式：\n• 拍照识别文字内容\n• 网页内容提取\n• 语音转文字\n\nAI 将自动解析内容并生成记忆卡片。")
+                Text("AI 智能导入需要配合项目中的 AI Skill 文件使用。\n\n使用方式：\n1. 将 skill/xx-memory-skill.json 文件导入支持的 AI 助手\n2. 通过对话让 AI 生成符合项目格式的 JSON/CSV/Markdown/TXT 卡片数据\n3. 将生成的内容粘贴到「从 JSON 导入」或保存为文件导入\n\nAI 助手将帮助你批量生成记忆卡片。")
             },
             confirmButton = {
-                TextButton(onClick = { showAiMaterialTheme.colorScheme.tertiary = false }) {
+                TextButton(onClick = { showAiDialog = false }) {
                     Text("知道了")
                 }
             }
@@ -491,12 +491,15 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
 @Composable
 private fun ManualCardDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String, String, String, String) -> Unit
 ) {
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
     var subject by remember { mutableStateOf("") }
     var detail by remember { mutableStateOf("") }
+    var tags by remember { mutableStateOf("") }
+    var imageUrl by remember { mutableStateOf("") }
+    var audioUrl by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(Card.TYPE_QA) }
 
     AlertDialog(
@@ -537,6 +540,14 @@ private fun ManualCardDialog(
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = tags,
+                    onValueChange = { tags = it },
+                    label = { Text("标签 (用英文逗号分隔)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "卡片类型",
@@ -553,20 +564,10 @@ private fun ManualCardDialog(
                         label = { Text("问答卡") }
                     )
                     FilterChip(
-                        selected = selectedType == Card.TYPE_FILL_BLANK,
-                        onClick = { selectedType = Card.TYPE_FILL_BLANK },
-                        label = { Text("填空卡") }
-                    )
-                    FilterChip(
                         selected = selectedType == Card.TYPE_CODE,
                         onClick = { selectedType = Card.TYPE_CODE },
                         label = { Text("代码片段") }
                     )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
                     FilterChip(
                         selected = selectedType == Card.TYPE_IMAGE,
                         onClick = { selectedType = Card.TYPE_IMAGE },
@@ -578,11 +579,31 @@ private fun ManualCardDialog(
                         label = { Text("音频卡") }
                     )
                 }
+                if (selectedType == Card.TYPE_IMAGE) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = imageUrl,
+                        onValueChange = { imageUrl = it },
+                        label = { Text("图片 URL") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+                if (selectedType == Card.TYPE_AUDIO) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = audioUrl,
+                        onValueChange = { audioUrl = it },
+                        label = { Text("音频 URL") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(question, answer, subject, detail, selectedType) },
+                onClick = { onConfirm(question, answer, subject, detail, tags, imageUrl, audioUrl) },
                 enabled = question.isNotBlank() && answer.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {

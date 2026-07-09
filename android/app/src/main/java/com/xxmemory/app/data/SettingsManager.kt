@@ -18,10 +18,6 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("eink_mode", false)
         set(value) = prefs.edit().putBoolean("eink_mode", value).apply()
 
-    var syncEnabled: Boolean
-        get() = prefs.getBoolean("sync_enabled", false)
-        set(value) = prefs.edit().putBoolean("sync_enabled", value).apply()
-
     var dailyReminder: Boolean
         get() = prefs.getBoolean("daily_reminder", true)
         set(value) = prefs.edit().putBoolean("daily_reminder", value).apply()

@@ -16,11 +16,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.xxmemory.app.domain.NotificationScheduler
 import com.xxmemory.app.ui.navigation.AppNavigation
 import com.xxmemory.app.ui.theme.XxMemoryTheme
@@ -57,6 +60,19 @@ class MainActivity : ComponentActivity() {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
                 ensureDailyReminderScheduled(context)
+            }
+
+            SideEffect {
+                val barColor = if (einkMode) android.graphics.Color.WHITE
+                else android.graphics.Color.parseColor("#FAF6F2")
+                window.statusBarColor = barColor
+                window.navigationBarColor = if (einkMode) android.graphics.Color.WHITE
+                else android.graphics.Color.WHITE
+
+                WindowCompat.getInsetsController(window, window.decorView).apply {
+                    isAppearanceLightStatusBars = true
+                    isAppearanceLightNavigationBars = true
+                }
             }
 
             XxMemoryTheme(einkMode = einkMode) {

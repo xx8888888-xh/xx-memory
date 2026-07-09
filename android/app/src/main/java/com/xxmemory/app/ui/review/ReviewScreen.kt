@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SpeakerNotes
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -62,6 +63,7 @@ fun ReviewScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val settings = remember { com.xxmemory.app.XxMemoryApplication.instance.settingsManager }
+    val isEinkMode = settings.einkMode
 
     var ttsReady by remember { mutableStateOf(false) }
     val tts = remember {
@@ -97,7 +99,15 @@ fun ReviewScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            if (isEinkMode) {
+                Text(
+                    text = "加载中...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            } else {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
         }
         return
     }
@@ -113,15 +123,32 @@ fun ReviewScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
-        LinearProgressIndicator(
-            progress = uiState.progress,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-        )
+        if (isEinkMode) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(uiState.progress)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.onSurface)
+                )
+            }
+        } else {
+            LinearProgressIndicator(
+                progress = uiState.progress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "${uiState.currentNumber} / ${uiState.totalCount}",
@@ -139,21 +166,46 @@ fun ReviewScreen(
         } else {
             val card = uiState.currentCard ?: return
 
-            if (card.subject.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (card.subject.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = if (isEinkMode) 0f else 0.1f))
+                            .padding(horizontal = 16.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = card.subject,
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                } else {
+                    Spacer(modifier = Modifier)
+                }
+                IconButton(
+                    onClick = { viewModel.toggleFavorite(card) }
                 ) {
-                    Text(
-                        text = card.subject,
-                        color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelMedium
+                    Icon(
+                        imageVector = if (card.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = if (card.isFavorite) "已收藏" else "收藏",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
+            if (card.tags.isNotBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "标签: ${card.tags}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
 
             Card(
                 modifier = Modifier
@@ -162,7 +214,9 @@ fun ReviewScreen(
                     .clickable { viewModel.flipCard() },
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(
+                    defaultElevation = if (isEinkMode) 0.dp else 4.dp
+                )
             ) {
                 Box(
                     modifier = Modifier
@@ -205,7 +259,8 @@ fun ReviewScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             CardContent(
                                 card = card,
-                                mediaPlayer = mediaPlayer
+                                mediaPlayer = mediaPlayer,
+                                isEinkMode = isEinkMode
                             )
                             if (card.detail.isNotEmpty()) {
                                 Spacer(modifier = Modifier.height(16.dp))
@@ -269,24 +324,28 @@ fun ReviewScreen(
                     AssessmentButton(
                         text = "忘记",
                         color = MaterialTheme.colorScheme.error,
+                        isEinkMode = isEinkMode,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.assessCard(0) }
                     )
                     AssessmentButton(
                         text = "困难",
                         color = MaterialTheme.colorScheme.secondary,
+                        isEinkMode = isEinkMode,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.assessCard(1) }
                     )
                     AssessmentButton(
                         text = "良好",
                         color = MaterialTheme.colorScheme.tertiary,
+                        isEinkMode = isEinkMode,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.assessCard(2) }
                     )
                     AssessmentButton(
                         text = "简单",
                         color = MaterialTheme.colorScheme.primary,
+                        isEinkMode = isEinkMode,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.assessCard(3) }
                     )
@@ -301,7 +360,8 @@ fun ReviewScreen(
 @Composable
 private fun CardContent(
     card: CardEntity,
-    mediaPlayer: MediaPlayer
+    mediaPlayer: MediaPlayer,
+    isEinkMode: Boolean
 ) {
     val context = LocalContext.current
 
@@ -319,13 +379,16 @@ private fun CardContent(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF1E1E1E), RoundedCornerShape(8.dp))
+                    .background(
+                        if (isEinkMode) MaterialTheme.colorScheme.surfaceVariant else Color(0xFF1E1E1E),
+                        RoundedCornerShape(8.dp)
+                    )
                     .padding(12.dp)
             ) {
                 Text(
                     text = card.answer,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color(0xFFD4D4D4),
+                    color = if (isEinkMode) MaterialTheme.colorScheme.onSurface else Color(0xFFD4D4D4),
                     fontFamily = FontFamily.Monospace
                 )
             }
@@ -403,16 +466,19 @@ private fun CardContent(
 private fun AssessmentButton(
     text: String,
     color: Color,
+    isEinkMode: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    val containerColor = if (isEinkMode) Color.Black else color.copy(alpha = 0.15f)
+    val contentColor = if (isEinkMode) Color.White else color
     Button(
         onClick = onClick,
         modifier = modifier.height(48.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = color.copy(alpha = 0.15f),
-            contentColor = color
+            containerColor = containerColor,
+            contentColor = contentColor
         )
     ) {
         Text(

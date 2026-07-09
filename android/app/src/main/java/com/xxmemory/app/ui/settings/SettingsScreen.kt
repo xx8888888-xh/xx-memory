@@ -1,5 +1,7 @@
 package com.xxmemory.app.ui.settings
 
+import android.content.Intent
+import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,7 +25,6 @@ import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -33,8 +34,8 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -95,35 +96,6 @@ fun SettingsScreen(
         )
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Account section
-        SectionTitle("账户")
-        Spacer(modifier = Modifier.height(8.dp))
-        SettingsCard {
-            SettingsItem(
-                icon = Icons.Filled.Person,
-                title = "个人信息",
-                subtitle = uiState.userName,
-                onClick = { showProfileDialog = true }
-            )
-            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
-            SettingsItem(
-                icon = Icons.Filled.Cloud,
-                title = "数据同步",
-                subtitle = if (uiState.syncEnabled) "已开启" else "已关闭",
-                trailing = {
-                    Switch(
-                        checked = uiState.syncEnabled,
-                        onCheckedChange = { viewModel.toggleSync(it) },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = MaterialTheme.colorScheme.primary,
-                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-                        )
-                    )
-                }
-            )
-        }
-        Spacer(modifier = Modifier.height(20.dp))
-
         // Review strategy section
         SectionTitle("复习策略")
         Spacer(modifier = Modifier.height(8.dp))
@@ -158,14 +130,14 @@ fun SettingsScreen(
                     )
                 )
             }
-            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.Shuffle,
                 title = "随机顺序复习",
                 checked = uiState.shuffleCards,
                 onCheckedChange = { viewModel.toggleShuffle(it) }
             )
-            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.Visibility,
                 title = "先显示详细说明",
@@ -230,7 +202,7 @@ fun SettingsScreen(
                 checked = uiState.einkMode,
                 onCheckedChange = { viewModel.toggleEinkMode(it) }
             )
-            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.SpeakerNotes,
                 title = "自动朗读",
@@ -256,7 +228,7 @@ fun SettingsScreen(
                     }
                 }
             )
-            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AccessTime,
                 title = "提醒时间",
@@ -275,7 +247,7 @@ fun SettingsScreen(
                 title = "版本",
                 subtitle = "1.0.0"
             )
-            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AutoAwesome,
                 title = "xx memory",
@@ -306,6 +278,43 @@ fun SettingsScreen(
             onConfirm = { hour, minute ->
                 viewModel.setReminderTime(hour, minute)
                 showTimePickerDialog = false
+            }
+        )
+    }
+
+    uiState.permissionRationale?.let { rationale ->
+        val (title, text, onConfirm) = when (rationale) {
+            "notification" -> Triple(
+                "需要通知权限",
+                "每日复习提醒需要通知权限才能正常工作。请前往应用通知设置开启权限。",
+                {
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                    }
+                    context.startActivity(intent)
+                    viewModel.dismissPermissionRationale()
+                }
+            )
+            "exact_alarm" -> Triple(
+                "需要精确闹钟权限",
+                "每日复习提醒需要精确闹钟权限才能准时触发。请前往系统设置开启权限。",
+                { viewModel.openExactAlarmSettings() }
+            )
+            else -> Triple(
+                "需要权限",
+                "开启此功能需要相关权限。",
+                { viewModel.dismissPermissionRationale() }
+            )
+        }
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissPermissionRationale() },
+            title = { Text(title, fontWeight = FontWeight.Bold) },
+            text = { Text(text) },
+            confirmButton = {
+                TextButton(onClick = onConfirm) { Text("去开启") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissPermissionRationale() }) { Text("取消") }
             }
         )
     }

@@ -1,6 +1,7 @@
 package com.xxmemory.app.ui.statistics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,27 +28,39 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.xxmemory.app.XxMemoryApplication
 
 @Composable
 fun StatisticsScreen(
     viewModel: StatisticsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isEinkMode = remember { XxMemoryApplication.instance.settingsManager.einkMode }
 
     if (uiState.isLoading) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            if (isEinkMode) {
+                Text(
+                    text = "加载中...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            } else {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
         }
         return
     }
@@ -68,7 +81,7 @@ fun StatisticsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // Streak ring
-        StreakRing(streakDays = uiState.streakDays)
+        StreakRing(streakDays = uiState.streakDays, isEinkMode = isEinkMode)
         Spacer(modifier = Modifier.height(20.dp))
 
         // Stats cards row
@@ -98,7 +111,7 @@ fun StatisticsScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // Weekly trend
-        WeeklyTrendChart(weeklyStats = uiState.weeklyStats)
+        WeeklyTrendChart(weeklyStats = uiState.weeklyStats, isEinkMode = isEinkMode)
         Spacer(modifier = Modifier.height(20.dp))
 
         // Subject mastery
@@ -111,7 +124,7 @@ fun StatisticsScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         uiState.subjectMastery.forEach { subject ->
-            SubjectMasteryBar(subject = subject)
+            SubjectMasteryBar(subject = subject, isEinkMode = isEinkMode)
             Spacer(modifier = Modifier.height(8.dp))
         }
 
@@ -120,11 +133,12 @@ fun StatisticsScreen(
 }
 
 @Composable
-private fun StreakRing(streakDays: Int) {
+private fun StreakRing(streakDays: Int, isEinkMode: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -136,26 +150,43 @@ private fun StreakRing(streakDays: Int) {
                 modifier = Modifier.size(80.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    progress = (streakDays % 7) / 7f,
-                    modifier = Modifier.size(80.dp),
-                    color = MaterialTheme.colorScheme.secondary,
-                    trackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
-                    strokeWidth = 8.dp
-                )
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Filled.LocalFireDepartment,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(18.dp)
+                val progress = ((streakDays % 7).coerceAtLeast(0) / 7f).let { if (it == 0f && streakDays > 0) 1f else it }
+                if (isEinkMode) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .border(8.dp, MaterialTheme.colorScheme.onSurface, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$streakDays",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                } else {
+                    CircularProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.size(80.dp),
+                        color = MaterialTheme.colorScheme.secondary,
+                        trackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+                        strokeWidth = 8.dp
                     )
-                    Text(
-                        text = "$streakDays",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Filled.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "$streakDays",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.width(16.dp))
@@ -216,11 +247,12 @@ private fun StatCard(
 }
 
 @Composable
-private fun WeeklyTrendChart(weeklyStats: List<WeeklyDayStat>) {
+private fun WeeklyTrendChart(weeklyStats: List<WeeklyDayStat>, isEinkMode: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 1.dp)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
@@ -270,11 +302,12 @@ private fun WeeklyTrendChart(weeklyStats: List<WeeklyDayStat>) {
 }
 
 @Composable
-private fun SubjectMasteryBar(subject: SubjectMastery) {
+private fun SubjectMasteryBar(subject: SubjectMastery, isEinkMode: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 1.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -294,15 +327,33 @@ private fun SubjectMasteryBar(subject: SubjectMastery) {
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = subject.masteredCards.toFloat() / subject.totalCards.coerceAtLeast(1),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-            )
+            val progress = subject.masteredCards.toFloat() / subject.totalCards.coerceAtLeast(1)
+            if (isEinkMode) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(progress)
+                            .fillMaxHeight()
+                            .background(MaterialTheme.colorScheme.onSurface)
+                    )
+                }
+            } else {
+                LinearProgressIndicator(
+                    progress = progress,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                )
+            }
         }
     }
 }

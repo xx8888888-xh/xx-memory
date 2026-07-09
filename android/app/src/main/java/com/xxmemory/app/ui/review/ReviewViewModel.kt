@@ -151,4 +151,13 @@ class ReviewViewModel : ViewModel() {
         interval < 365 -> "${interval / 30}个月后"
         else -> "${interval / 365}年后"
     }
+
+    fun toggleFavorite(card: Card) {
+        viewModelScope.launch {
+            repository.toggleFavorite(card.id)
+            _uiState.value = _uiState.value.copy(
+                currentCard = card.copy(isFavorite = !card.isFavorite)
+            )
+        }
+    }
 }
