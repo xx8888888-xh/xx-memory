@@ -34,7 +34,7 @@
 ## 四、项目技术架构
 - **语言**: Kotlin
 - **UI 框架**: Jetpack Compose (Material 3)
-- **数据库**: Room (SQLite)，数据库名 `xx_memory_database`，版本 2
+- **数据库**: Room (SQLite)，数据库名 `xx_memory_database`，版本 4
 - **架构模式**: MVVM（ViewModel + Repository + DAO）
 - **依赖注入**: 无，使用单例模式（XxMemoryApplication.instance）
 - **后台任务**: AlarmManager + BroadcastReceiver (AlarmReceiver, BootReceiver)
@@ -59,6 +59,13 @@
 - **艾宾浩斯固定**: 1/2/4/7/15/30/60/180 天
 - **FSRS v4**: 完整三参数模型 (S/D/R)，从 easeFactor 恢复 difficulty
 - 算法统一接口: `MemoryAlgorithm`，内部定义 `ScheduleResult`
+- 单元测试: `android/app/src/test/java/com/xxmemory/app/domain/MemoryAlgorithmTest.kt`
+
+### 复习模式
+- **经典闪卡**: 翻面自评（忘记/困难/良好/简单）
+- **百词斩**: 看词选义 → 提示/详情 → 拼写/斩熟词，支持深度模式（词根词缀/词组搭配/押韵）
+- **不背单词**: 认识/不认识 → 选义 → 真实语境例句/派生词，支持沉浸刷词
+- 三种模式可在复习界面顶部自由切换，不再提供混合模式
 
 ## 五、整机测试方法（必须执行）
 
@@ -109,6 +116,9 @@ C:\Android\Sdk\platform-tools\adb.exe shell input swipe <x1> <y1> <x2> <y2> <dur
 - [ ] 导入页面正常（文件导入、URL 导入、手动添加、AI 导入、格式 Chips）
 - [ ] 手动添加卡片对话框（问题/答案/科目/详细说明/卡片类型选择）
 - [ ] 复习流程（翻转卡片 → 评分 → 算法更新 → 完成）
+- [ ] 复习模式自由切换（闪卡 / 百词斩 / 不背单词）
+- [ ] 百词斩流程（认识/不认识 → 选义 → 提示 → 拼写/斩熟词）
+- [ ] 不背单词流程（认识/不认识 → 选义 → 真实语境例句 → 随手拼）
 - [ ] 算法切换（SM-2 / 艾宾浩斯固定 / FSRS）
 - [ ] 统计页面（连续学习、总复习、总卡片、本周趋势、科目掌握度）
 - [ ] 设置页面（每日卡片限制 Slider、随机顺序、先显示详细说明、算法选择、墨水屏模式、自动朗读、每日提醒）

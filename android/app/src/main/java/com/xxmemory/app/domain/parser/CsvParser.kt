@@ -31,6 +31,14 @@ class CsvParser : DocumentParser {
         val imageUrlIndex = indexOf("imageUrl").let { if (it < 0) indexOf("image_url") else it }
         val audioUrlIndex = indexOf("audioUrl").let { if (it < 0) indexOf("audio_url") else it }
         val isFavoriteIndex = indexOf("isFavorite").let { if (it < 0) indexOf("is_favorite") else it }
+        val phoneticIndex = indexOf("phonetic")
+        val exampleIndex = indexOf("example")
+        val collocationsIndex = indexOf("collocations")
+        val etymologyIndex = indexOf("etymology")
+        val hintIndex = indexOf("hint")
+        val rhymeIndex = indexOf("rhyme")
+        val derivativesIndex = indexOf("derivatives")
+        val masteredIndex = indexOf("mastered")
 
         for (i in startIndex until rows.size) {
             val row = rows[i]
@@ -48,6 +56,14 @@ class CsvParser : DocumentParser {
             val imageUrl = valueAt(imageUrlIndex)?.takeIf { it.isNotBlank() }
             val audioUrl = valueAt(audioUrlIndex)?.takeIf { it.isNotBlank() }
             val isFavorite = valueAt(isFavoriteIndex)?.lowercase() in setOf("true", "1", "yes")
+            val phonetic = valueAt(phoneticIndex) ?: ""
+            val example = valueAt(exampleIndex) ?: ""
+            val collocations = valueAt(collocationsIndex) ?: ""
+            val etymology = valueAt(etymologyIndex) ?: ""
+            val hint = valueAt(hintIndex) ?: ""
+            val rhyme = valueAt(rhymeIndex) ?: ""
+            val derivatives = valueAt(derivativesIndex) ?: ""
+            val mastered = valueAt(masteredIndex)?.lowercase() in setOf("true", "1", "yes")
 
             cards.add(
                 Card(
@@ -59,7 +75,15 @@ class CsvParser : DocumentParser {
                     tags = tags,
                     imageUrl = imageUrl,
                     audioUrl = audioUrl,
-                    isFavorite = isFavorite
+                    isFavorite = isFavorite,
+                    phonetic = phonetic,
+                    example = example,
+                    collocations = collocations,
+                    etymology = etymology,
+                    hint = hint,
+                    rhyme = rhyme,
+                    derivatives = derivatives,
+                    mastered = mastered
                 )
             )
         }
@@ -73,7 +97,9 @@ class CsvParser : DocumentParser {
         val knownHeaders = setOf(
             "question", "answer", "subject", "detail", "tags",
             "cardtype", "card_type", "imageurl", "image_url",
-            "audiourl", "audio_url", "isfavorite", "is_favorite"
+            "audiourl", "audio_url", "isfavorite", "is_favorite",
+            "phonetic", "example", "collocations", "etymology",
+            "hint", "rhyme", "derivatives", "mastered"
         )
         return lower.any { it in knownHeaders }
     }

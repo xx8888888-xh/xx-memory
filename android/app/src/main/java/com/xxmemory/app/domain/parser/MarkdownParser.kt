@@ -40,6 +40,14 @@ class MarkdownParser : DocumentParser {
         var currentImageUrl: String? = null
         var currentAudioUrl: String? = null
         var currentIsFavorite = false
+        var currentPhonetic = ""
+        var currentExample = ""
+        var currentCollocations = ""
+        var currentEtymology = ""
+        var currentHint = ""
+        var currentRhyme = ""
+        var currentDerivatives = ""
+        var currentMastered = false
 
         fun parseValue(line: String, prefix: String): String {
             val idx = line.indexOf(prefix, ignoreCase = true)
@@ -60,7 +68,15 @@ class MarkdownParser : DocumentParser {
                         tags = currentTags,
                         imageUrl = currentImageUrl?.takeIf { it.isNotBlank() },
                         audioUrl = currentAudioUrl?.takeIf { it.isNotBlank() },
-                        isFavorite = currentIsFavorite
+                        isFavorite = currentIsFavorite,
+                        phonetic = currentPhonetic,
+                        example = currentExample,
+                        collocations = currentCollocations,
+                        etymology = currentEtymology,
+                        hint = currentHint,
+                        rhyme = currentRhyme,
+                        derivatives = currentDerivatives,
+                        mastered = currentMastered
                     )
                 )
             }
@@ -73,6 +89,14 @@ class MarkdownParser : DocumentParser {
             currentImageUrl = null
             currentAudioUrl = null
             currentIsFavorite = false
+            currentPhonetic = ""
+            currentExample = ""
+            currentCollocations = ""
+            currentEtymology = ""
+            currentHint = ""
+            currentRhyme = ""
+            currentDerivatives = ""
+            currentMastered = false
         }
 
         for (line in lines) {
@@ -125,6 +149,46 @@ class MarkdownParser : DocumentParser {
                         trimmed.startsWith("## IsFavorite:", ignoreCase = true) ||
                         trimmed.startsWith("### IsFavorite:", ignoreCase = true) -> {
                     currentIsFavorite = parseValue(trimmed, "IsFavorite:").lowercase() in setOf("true", "1", "yes")
+                }
+                trimmed.startsWith("# Phonetic:", ignoreCase = true) ||
+                        trimmed.startsWith("## Phonetic:", ignoreCase = true) ||
+                        trimmed.startsWith("### Phonetic:", ignoreCase = true) -> {
+                    currentPhonetic = parseValue(trimmed, "Phonetic:")
+                }
+                trimmed.startsWith("# Example:", ignoreCase = true) ||
+                        trimmed.startsWith("## Example:", ignoreCase = true) ||
+                        trimmed.startsWith("### Example:", ignoreCase = true) -> {
+                    currentExample = parseValue(trimmed, "Example:")
+                }
+                trimmed.startsWith("# Collocations:", ignoreCase = true) ||
+                        trimmed.startsWith("## Collocations:", ignoreCase = true) ||
+                        trimmed.startsWith("### Collocations:", ignoreCase = true) -> {
+                    currentCollocations = parseValue(trimmed, "Collocations:")
+                }
+                trimmed.startsWith("# Etymology:", ignoreCase = true) ||
+                        trimmed.startsWith("## Etymology:", ignoreCase = true) ||
+                        trimmed.startsWith("### Etymology:", ignoreCase = true) -> {
+                    currentEtymology = parseValue(trimmed, "Etymology:")
+                }
+                trimmed.startsWith("# Hint:", ignoreCase = true) ||
+                        trimmed.startsWith("## Hint:", ignoreCase = true) ||
+                        trimmed.startsWith("### Hint:", ignoreCase = true) -> {
+                    currentHint = parseValue(trimmed, "Hint:")
+                }
+                trimmed.startsWith("# Rhyme:", ignoreCase = true) ||
+                        trimmed.startsWith("## Rhyme:", ignoreCase = true) ||
+                        trimmed.startsWith("### Rhyme:", ignoreCase = true) -> {
+                    currentRhyme = parseValue(trimmed, "Rhyme:")
+                }
+                trimmed.startsWith("# Derivatives:", ignoreCase = true) ||
+                        trimmed.startsWith("## Derivatives:", ignoreCase = true) ||
+                        trimmed.startsWith("### Derivatives:", ignoreCase = true) -> {
+                    currentDerivatives = parseValue(trimmed, "Derivatives:")
+                }
+                trimmed.startsWith("# Mastered:", ignoreCase = true) ||
+                        trimmed.startsWith("## Mastered:", ignoreCase = true) ||
+                        trimmed.startsWith("### Mastered:", ignoreCase = true) -> {
+                    currentMastered = parseValue(trimmed, "Mastered:").lowercase() in setOf("true", "1", "yes")
                 }
                 currentQuestion != null -> {
                     currentAnswer.append(trimmed).append("\n")

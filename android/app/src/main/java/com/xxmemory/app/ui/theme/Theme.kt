@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.xxmemory.app.ui.theme
 
 import android.content.Context
@@ -6,16 +8,30 @@ import androidx.compose.foundation.Indication
 import androidx.compose.foundation.IndicationInstance
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.interaction.InteractionSource
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 
 private val LightColorScheme = lightColorScheme(
     primary = Primary,
@@ -120,4 +136,68 @@ fun rememberEinkMode(): Boolean {
         onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
     return einkMode.value
+}
+
+/**
+ * 墨水屏友好 Chip：无动画、无 ripple、仅使用灰色/黑色/白色。
+ * 在非墨水屏模式下回退到普通 Text 样式，但调用处仍可用 Material FilterChip。
+ */
+@Composable
+fun EinkFilterChip(
+    selected: Boolean,
+    onClick: () -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    val isEinkMode = rememberEinkMode()
+    if (isEinkMode) {
+        val bgColor = when {
+            !enabled -> Color(0xFFF5F5F5)
+            selected -> Color.DarkGray
+            else -> Color.White
+        }
+        val contentColor = when {
+            !enabled -> Color.Gray
+            selected -> Color.White
+            else -> Color.Black
+        }
+        val borderModifier = if (selected) {
+            Modifier.padding(1.dp).background(Color.Black)
+        } else {
+            Modifier
+        }
+        Box(
+            modifier = modifier
+                .then(borderModifier)
+                .clip(RoundedCornerShape(8.dp))
+                .background(bgColor)
+                .then(
+                    if (enabled) {
+                        Modifier.clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onClick
+                        )
+                    } else Modifier
+                )
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = contentColor,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+            )
+        }
+    } else {
+        androidx.compose.material3.FilterChip(
+            selected = selected,
+            onClick = onClick,
+            label = { Text(label) },
+            modifier = modifier,
+            enabled = enabled
+        )
+    }
 }

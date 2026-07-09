@@ -1,6 +1,5 @@
 package com.xxmemory.app.domain
 
-import android.util.Log
 import java.util.Calendar
 
 @Deprecated("Use MemoryAlgorithm.ScheduleResult", ReplaceWith("MemoryAlgorithm.ScheduleResult"))
@@ -13,10 +12,7 @@ object EbbinghausAlgorithm {
             "SM-2" -> SM2Algorithm
             "艾宾浩斯固定" -> EbbinghausFixedAlgorithm
             "FSRS" -> FsrsAlgorithm
-            else -> {
-                Log.w("EbbinghausAlgorithm", "未知算法类型: $type, 降级为SM-2")
-                SM2Algorithm
-            }
+            else -> SM2Algorithm
         }
     }
 

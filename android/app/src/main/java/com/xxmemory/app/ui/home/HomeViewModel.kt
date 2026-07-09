@@ -79,12 +79,16 @@ class HomeViewModel : ViewModel() {
                 }
 
                 val settings = XxMemoryApplication.instance.settingsManager
-                val limit = settings.dailyCardLimit.coerceAtLeast(1)
+                val limit = if (settings.dailyCardLimitEnabled) {
+                    settings.dailyCardLimit.coerceAtLeast(1)
+                } else {
+                    Int.MAX_VALUE
+                }
 
                 _uiState.value = _uiState.value.copy(
                     dueCards = dueCards,
                     totalCards = totalCards,
-                    dueCount = dueCards.size.coerceAtMost(limit),
+                    dueCount = if (settings.dailyCardLimitEnabled) dueCards.size.coerceAtMost(limit) else dueCards.size,
                     todayReviewed = todayReviewed,
                     subjects = subjects,
                     weekStats = weekStats,

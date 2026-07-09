@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 data class SettingsUiState(
     val dailyCardLimit: Int = 20,
+    val dailyCardLimitEnabled: Boolean = true,
     val autoPlayAudio: Boolean = false,
     val einkMode: Boolean = false,
     val dailyReminder: Boolean = true,
@@ -24,6 +25,9 @@ data class SettingsUiState(
     val showDetailFirst: Boolean = false,
     val algorithmType: String = "SM-2",
     val reminderTimeSlots: List<String> = listOf("20:00"),
+    val reviewMode: String = "flashcard",
+    val baicizhanDeepMode: Boolean = true,
+    val bbdcImmersiveMode: Boolean = false,
     val userName: String = "用户",
     val userEmail: String = "user@example.com",
     val permissionRationale: String? = null
@@ -42,6 +46,7 @@ class SettingsViewModel : ViewModel() {
     private fun loadSettings() {
         _uiState.value = SettingsUiState(
             dailyCardLimit = settingsManager.dailyCardLimit,
+            dailyCardLimitEnabled = settingsManager.dailyCardLimitEnabled,
             autoPlayAudio = settingsManager.autoPlayAudio,
             einkMode = settingsManager.einkMode,
             dailyReminder = settingsManager.dailyReminder,
@@ -49,6 +54,9 @@ class SettingsViewModel : ViewModel() {
             showDetailFirst = settingsManager.showDetailFirst,
             algorithmType = settingsManager.algorithmType,
             reminderTimeSlots = parseSlots(settingsManager.reminderTimeSlots),
+            reviewMode = settingsManager.reviewMode,
+            baicizhanDeepMode = settingsManager.baicizhanDeepMode,
+            bbdcImmersiveMode = settingsManager.bbdcImmersiveMode,
             userName = settingsManager.userName,
             userEmail = settingsManager.userEmail
         )
@@ -140,9 +148,29 @@ class SettingsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(dailyCardLimit = clamped)
     }
 
+    fun toggleDailyCardLimitEnabled(enabled: Boolean) {
+        settingsManager.dailyCardLimitEnabled = enabled
+        _uiState.value = _uiState.value.copy(dailyCardLimitEnabled = enabled)
+    }
+
     fun setAlgorithmType(type: String) {
         settingsManager.algorithmType = type
         _uiState.value = _uiState.value.copy(algorithmType = type)
+    }
+
+    fun setReviewMode(mode: String) {
+        settingsManager.reviewMode = mode
+        _uiState.value = _uiState.value.copy(reviewMode = mode)
+    }
+
+    fun toggleBaicizhanDeepMode(enabled: Boolean) {
+        settingsManager.baicizhanDeepMode = enabled
+        _uiState.value = _uiState.value.copy(baicizhanDeepMode = enabled)
+    }
+
+    fun toggleBbdcImmersiveMode(enabled: Boolean) {
+        settingsManager.bbdcImmersiveMode = enabled
+        _uiState.value = _uiState.value.copy(bbdcImmersiveMode = enabled)
     }
 
     fun addReminderSlot(hour: Int, minute: Int) {

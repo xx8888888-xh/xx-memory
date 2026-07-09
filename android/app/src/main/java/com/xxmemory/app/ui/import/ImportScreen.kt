@@ -37,8 +37,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -66,6 +64,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.data.entity.Card
+import com.xxmemory.app.ui.theme.EinkFilterChip
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -189,7 +188,7 @@ fun ImportScreen(
     if (showManualDialog) {
         ManualCardDialog(
             onDismiss = { showManualDialog = false },
-            onConfirm = { q, a, s, d, tags, type, img, aud ->
+            onConfirm = { q, a, s, d, tags, type, img, aud, phonetic, example, collocations, etymology, hint, rhyme, derivatives ->
                 viewModel.importManualCard(
                     question = q,
                     answer = a,
@@ -198,7 +197,14 @@ fun ImportScreen(
                     cardType = type,
                     tags = tags,
                     imageUrl = img,
-                    audioUrl = aud
+                    audioUrl = aud,
+                    phonetic = phonetic,
+                    example = example,
+                    collocations = collocations,
+                    etymology = etymology,
+                    hint = hint,
+                    rhyme = rhyme,
+                    derivatives = derivatives
                 )
                 showManualDialog = false
             }
@@ -302,7 +308,7 @@ private fun UrlImportSection(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "粘贴 JSON 数据",
+                        text = "粘贴 JSON 数据，格式: {\"cards\":[{\"question\":\"...\",\"answer\":\"...\"}]} 或 [{\"front\":\"...\",\"back\":\"...\"}]",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -407,51 +413,39 @@ private fun FormatChipsSection(
     onFormatSelected: (String) -> Unit
 ) {
     Column {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = selectedFormat == "JSON",
-                onClick = { onFormatSelected(if (selectedFormat == "JSON") "" else "JSON") },
-                label = { Text("JSON") },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                EinkFilterChip(
+                    selected = selectedFormat == "JSON",
+                    onClick = { onFormatSelected(if (selectedFormat == "JSON") "" else "JSON") },
+                    label = "JSON"
                 )
-            )
-            FilterChip(
-                selected = selectedFormat == "CSV",
-                onClick = { onFormatSelected(if (selectedFormat == "CSV") "" else "CSV") },
-                label = { Text("CSV") },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                EinkFilterChip(
+                    selected = selectedFormat == "CSV",
+                    onClick = { onFormatSelected(if (selectedFormat == "CSV") "" else "CSV") },
+                    label = "CSV"
                 )
-            )
-            FilterChip(
-                selected = selectedFormat == "TXT",
-                onClick = { onFormatSelected(if (selectedFormat == "TXT") "" else "TXT") },
-                label = { Text("TXT") },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                EinkFilterChip(
+                    selected = selectedFormat == "TXT",
+                    onClick = { onFormatSelected(if (selectedFormat == "TXT") "" else "TXT") },
+                    label = "TXT"
                 )
-            )
-            FilterChip(
-                selected = selectedFormat == "Markdown",
-                onClick = { onFormatSelected(if (selectedFormat == "Markdown") "" else "Markdown") },
-                label = { Text("Markdown") },
-                colors = FilterChipDefaults.filterChipColors(
-                    containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                EinkFilterChip(
+                    selected = selectedFormat == "Markdown",
+                    onClick = { onFormatSelected(if (selectedFormat == "Markdown") "" else "Markdown") },
+                    label = "Markdown"
                 )
-            )
+            }
+            if (selectedFormat.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "已选择格式: $selectedFormat",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
-        if (selectedFormat.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "已选择格式: $selectedFormat",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
 }
 
 @Composable
@@ -508,7 +502,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
 @Composable
 private fun ManualCardDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String, String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String) -> Unit
 ) {
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
@@ -517,6 +511,13 @@ private fun ManualCardDialog(
     var tags by remember { mutableStateOf("") }
     var imageUrl by remember { mutableStateOf("") }
     var audioUrl by remember { mutableStateOf("") }
+    var phonetic by remember { mutableStateOf("") }
+    var example by remember { mutableStateOf("") }
+    var collocations by remember { mutableStateOf("") }
+    var etymology by remember { mutableStateOf("") }
+    var hint by remember { mutableStateOf("") }
+    var rhyme by remember { mutableStateOf("") }
+    var derivatives by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(Card.TYPE_QA) }
 
     AlertDialog(
@@ -566,6 +567,62 @@ private fun ManualCardDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = phonetic,
+                    onValueChange = { phonetic = it },
+                    label = { Text("音标 (可选)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = example,
+                    onValueChange = { example = it },
+                    label = { Text("例句 (可选)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = collocations,
+                    onValueChange = { collocations = it },
+                    label = { Text("词组搭配 (可选)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = etymology,
+                    onValueChange = { etymology = it },
+                    label = { Text("词根词缀 (可选)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = hint,
+                    onValueChange = { hint = it },
+                    label = { Text("提示 (可选)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = rhyme,
+                    onValueChange = { rhyme = it },
+                    label = { Text("押韵词 / 联想词 (可选)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = derivatives,
+                    onValueChange = { derivatives = it },
+                    label = { Text("派生词 (可选)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "卡片类型",
@@ -576,25 +633,25 @@ private fun ManualCardDialog(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FilterChip(
+                    EinkFilterChip(
                         selected = selectedType == Card.TYPE_QA,
                         onClick = { selectedType = Card.TYPE_QA },
-                        label = { Text("问答卡") }
+                        label = "问答卡"
                     )
-                    FilterChip(
+                    EinkFilterChip(
                         selected = selectedType == Card.TYPE_CODE,
                         onClick = { selectedType = Card.TYPE_CODE },
-                        label = { Text("代码片段") }
+                        label = "代码片段"
                     )
-                    FilterChip(
+                    EinkFilterChip(
                         selected = selectedType == Card.TYPE_IMAGE,
                         onClick = { selectedType = Card.TYPE_IMAGE },
-                        label = { Text("图片卡") }
+                        label = "图片卡"
                     )
-                    FilterChip(
+                    EinkFilterChip(
                         selected = selectedType == Card.TYPE_AUDIO,
                         onClick = { selectedType = Card.TYPE_AUDIO },
-                        label = { Text("音频卡") }
+                        label = "音频卡"
                     )
                 }
                 if (selectedType == Card.TYPE_IMAGE) {
@@ -621,7 +678,7 @@ private fun ManualCardDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(question, answer, subject, detail, tags, selectedType, imageUrl, audioUrl) },
+                onClick = { onConfirm(question, answer, subject, detail, tags, selectedType, imageUrl, audioUrl, phonetic, example, collocations, etymology, hint, rhyme, derivatives) },
                 enabled = question.isNotBlank() && answer.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {

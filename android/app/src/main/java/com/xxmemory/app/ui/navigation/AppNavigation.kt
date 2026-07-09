@@ -19,6 +19,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -53,7 +54,7 @@ val bottomNavItems = listOf(
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
-    val isEinkMode = rememberEinkMode()
+    val einkModeState = rememberUpdatedState(rememberEinkMode())
 
     Scaffold(
         bottomBar = {
@@ -64,10 +65,10 @@ fun AppNavigation() {
             navController = navController,
             startDestination = Screen.Home.route,
             modifier = Modifier.padding(innerPadding),
-            enterTransition = { if (isEinkMode) EnterTransition.None else androidx.compose.animation.fadeIn() },
-            exitTransition = { if (isEinkMode) ExitTransition.None else androidx.compose.animation.fadeOut() },
-            popEnterTransition = { if (isEinkMode) EnterTransition.None else androidx.compose.animation.fadeIn() },
-            popExitTransition = { if (isEinkMode) ExitTransition.None else androidx.compose.animation.fadeOut() }
+            enterTransition = { if (einkModeState.value) EnterTransition.None else androidx.compose.animation.fadeIn() },
+            exitTransition = { if (einkModeState.value) ExitTransition.None else androidx.compose.animation.fadeOut() },
+            popEnterTransition = { if (einkModeState.value) EnterTransition.None else androidx.compose.animation.fadeIn() },
+            popExitTransition = { if (einkModeState.value) ExitTransition.None else androidx.compose.animation.fadeOut() }
         ) {
             composable(Screen.Home.route) {
                 HomeScreen(

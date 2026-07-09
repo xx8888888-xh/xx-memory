@@ -4,6 +4,7 @@ import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
 import com.xxmemory.app.BuildConfig
+import com.xxmemory.app.ui.theme.EinkFilterChip
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,12 +26,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SpeakerNotes
 import androidx.compose.material.icons.filled.Visibility
@@ -39,7 +42,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Divider
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -107,17 +109,27 @@ fun SettingsScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "每日卡片限制",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    Switch(
+                        checked = uiState.dailyCardLimitEnabled,
+                        onCheckedChange = { viewModel.toggleDailyCardLimitEnabled(it) }
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
                     Text(
-                        text = "${uiState.dailyCardLimit} 张",
+                        text = if (uiState.dailyCardLimitEnabled) "${uiState.dailyCardLimit} 张" else "无限制",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (uiState.dailyCardLimitEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -126,9 +138,12 @@ fun SettingsScreen(
                     onValueChange = { viewModel.setDailyCardLimit(it.toInt()) },
                     valueRange = 5f..100f,
                     steps = 18,
+                    enabled = uiState.dailyCardLimitEnabled,
                     colors = SliderDefaults.colors(
                         thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        disabledThumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                        disabledActiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
                     )
                 )
             }
@@ -177,17 +192,62 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf("SM-2", "艾宾浩斯固定", "FSRS").forEach { algo ->
-                        FilterChip(
+                        EinkFilterChip(
                             selected = uiState.algorithmType == algo,
                             onClick = { viewModel.setAlgorithmType(algo) },
-                            label = { Text(algo, style = MaterialTheme.typography.labelSmall) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MaterialTheme.colorScheme.primary,
-                                selectedLabelColor = MaterialTheme.colorScheme.surface
-                            ),
+                            label = algo,
                             modifier = Modifier.weight(1f)
                         )
                     }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "复习模式: ${reviewModeLabel(uiState.reviewMode)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = reviewModeDescription(uiState.reviewMode),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(
+                        "flashcard" to "闪卡",
+                        "baicizhan" to "百词斩",
+                        "bbdc" to "不背"
+                    ).forEach { (mode, label) ->
+                        EinkFilterChip(
+                            selected = uiState.reviewMode == mode,
+                            onClick = { viewModel.setReviewMode(mode) },
+                            label = label,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                SwitchItem(
+                    icon = Icons.Filled.School,
+                    title = "百词斩深度模式",
+                    subtitle = "详情页展示词根词缀、词组搭配、押韵等完整内容",
+                    checked = uiState.baicizhanDeepMode,
+                    onCheckedChange = { viewModel.toggleBaicizhanDeepMode(it) }
+                )
+                if (uiState.reviewMode == "bbdc") {
+                    Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+                    SwitchItem(
+                        icon = Icons.Filled.AutoStories,
+                        title = "不背单词沉浸刷词",
+                        subtitle = "全屏极简界面，自动朗读，专注刷词",
+                        checked = uiState.bbdcImmersiveMode,
+                        onCheckedChange = { viewModel.toggleBbdcImmersiveMode(it) }
+                    )
                 }
             }
         }
@@ -497,6 +557,20 @@ private fun ProfileEditDialog(
             TextButton(onClick = onDismiss) { Text("取消") }
         }
     )
+}
+
+private fun reviewModeLabel(mode: String): String = when (mode) {
+    "flashcard" -> "经典闪卡"
+    "baicizhan" -> "百词斩"
+    "bbdc" -> "不背单词"
+    else -> mode
+}
+
+private fun reviewModeDescription(mode: String): String = when (mode) {
+    "flashcard" -> "点击翻面后自评掌握程度，适合通用记忆卡片"
+    "baicizhan" -> "看单词选释义，支持提示、拼写、斩熟词与图文/深度记忆"
+    "bbdc" -> "认识/不认识二选一，再验证释义，强调真实语境例句"
+    else -> ""
 }
 
 @Composable

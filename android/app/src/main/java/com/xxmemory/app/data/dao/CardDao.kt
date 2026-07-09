@@ -11,10 +11,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CardDao {
 
-    @Query("SELECT * FROM cards WHERE next_review_date <= :today ORDER BY next_review_date ASC")
+    @Query("SELECT * FROM cards WHERE next_review_date <= :today AND mastered = 0 ORDER BY next_review_date ASC")
     fun getDueCards(today: Long): Flow<List<Card>>
 
-    @Query("SELECT * FROM cards WHERE next_review_date <= :today ORDER BY next_review_date ASC")
+    @Query("SELECT * FROM cards WHERE next_review_date <= :today AND mastered = 0 ORDER BY next_review_date ASC")
     suspend fun getDueCardsList(today: Long): List<Card>
 
     @Query("SELECT * FROM cards WHERE subject = :subject ORDER BY created_at DESC")
@@ -23,8 +23,12 @@ interface CardDao {
     @Query("SELECT COUNT(*) FROM cards")
     fun getTotalCards(): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM cards WHERE next_review_date <= :today")
+    @Query("SELECT COUNT(*) FROM cards WHERE next_review_date <= :today AND mastered = 0")
     fun getDueCount(today: Long): Flow<Int>
+
+    /** All non-mastered cards, useful for generating distractor options. */
+    @Query("SELECT * FROM cards WHERE mastered = 0 ORDER BY RANDOM() LIMIT :limit")
+    suspend fun getDistractorCandidates(limit: Int): List<Card>
 
     @Query("SELECT COUNT(*) FROM review_logs WHERE review_date >= :startOfDay AND review_date < :endOfDay")
     fun getTodayReviewedCount(startOfDay: Long, endOfDay: Long): Flow<Int>

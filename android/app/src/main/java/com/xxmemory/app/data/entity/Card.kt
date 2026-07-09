@@ -53,7 +53,39 @@ data class Card(
     val tags: String = "",
 
     @ColumnInfo(name = "is_favorite")
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+
+    /** 音标（单词类卡片） */
+    @ColumnInfo(name = "phonetic")
+    val phonetic: String = "",
+
+    /** 例句（真实语境） */
+    @ColumnInfo(name = "example")
+    val example: String = "",
+
+    /** 词组搭配 / 考点 */
+    @ColumnInfo(name = "collocations")
+    val collocations: String = "",
+
+    /** 词根词缀 / 词源 */
+    @ColumnInfo(name = "etymology")
+    val etymology: String = "",
+
+    /** 提示信息，对应百词斩的"提示" */
+    @ColumnInfo(name = "hint")
+    val hint: String = "",
+
+    /** 押韵词 / 联想词，对应百词斩押韵模式 */
+    @ColumnInfo(name = "rhyme")
+    val rhyme: String = "",
+
+    /** 派生词，对应不背单词派生词汇树 */
+    @ColumnInfo(name = "derivatives")
+    val derivatives: String = "",
+
+    /** 已掌握 / 已斩：掌握后不再参与常规复习 */
+    @ColumnInfo(name = "mastered")
+    val mastered: Boolean = false
 ) {
     companion object {
         const val TYPE_QA = "qa"

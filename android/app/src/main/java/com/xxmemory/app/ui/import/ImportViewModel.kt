@@ -146,7 +146,22 @@ class ImportViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isImporting = true, importMessage = null)
             try {
-                val cards = parseCardsFromJson(jsonContent)
+                val trimmed = jsonContent.trim()
+                if (trimmed.isBlank()) {
+                    _uiState.value = _uiState.value.copy(
+                        isImporting = false,
+                        importMessage = "请输入 JSON 内容"
+                    )
+                    return@launch
+                }
+                val cards = parseCardsFromJson(trimmed)
+                if (cards.isEmpty()) {
+                    _uiState.value = _uiState.value.copy(
+                        isImporting = false,
+                        importMessage = "未解析到有效卡片，请检查 JSON 格式"
+                    )
+                    return@launch
+                }
                 cards.forEach { repository.insertCard(it) }
                 _uiState.value = _uiState.value.copy(
                     isImporting = false,
@@ -170,7 +185,14 @@ class ImportViewModel : ViewModel() {
         cardType: String = Card.TYPE_QA,
         tags: String = "",
         imageUrl: String = "",
-        audioUrl: String = ""
+        audioUrl: String = "",
+        phonetic: String = "",
+        example: String = "",
+        collocations: String = "",
+        etymology: String = "",
+        hint: String = "",
+        rhyme: String = "",
+        derivatives: String = ""
     ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isImporting = true, importMessage = null)
@@ -183,7 +205,14 @@ class ImportViewModel : ViewModel() {
                     cardType = cardType,
                     tags = tags,
                     imageUrl = imageUrl.takeIf { it.isNotBlank() },
-                    audioUrl = audioUrl.takeIf { it.isNotBlank() }
+                    audioUrl = audioUrl.takeIf { it.isNotBlank() },
+                    phonetic = phonetic,
+                    example = example,
+                    collocations = collocations,
+                    etymology = etymology,
+                    hint = hint,
+                    rhyme = rhyme,
+                    derivatives = derivatives
                 )
                 repository.insertCard(card)
                 _uiState.value = _uiState.value.copy(
@@ -219,9 +248,15 @@ class ImportViewModel : ViewModel() {
     }
 
     private fun mapJsonToCard(json: JsonObject): Card {
+        val question = json.get("question")?.asString
+            ?: json.get("front")?.asString
+            ?: ""
+        val answer = json.get("answer")?.asString
+            ?: json.get("back")?.asString
+            ?: ""
         return Card(
-            question = json.get("question")?.asString ?: "",
-            answer = json.get("answer")?.asString ?: "",
+            question = question,
+            answer = answer,
             detail = json.get("detail")?.asString ?: "",
             subject = json.get("subject")?.asString ?: "",
             cardType = json.get("cardType")?.asString ?: json.get("card_type")?.asString ?: "qa",
@@ -230,7 +265,15 @@ class ImportViewModel : ViewModel() {
             imageUrl = json.get("imageUrl")?.asString ?: json.get("image_url")?.asString,
             isFavorite = json.get("isFavorite")?.asBoolean
                 ?: json.get("is_favorite")?.asBoolean
-                ?: false
+                ?: false,
+            phonetic = json.get("phonetic")?.asString ?: "",
+            example = json.get("example")?.asString ?: "",
+            collocations = json.get("collocations")?.asString ?: "",
+            etymology = json.get("etymology")?.asString ?: "",
+            hint = json.get("hint")?.asString ?: "",
+            rhyme = json.get("rhyme")?.asString ?: "",
+            derivatives = json.get("derivatives")?.asString ?: "",
+            mastered = json.get("mastered")?.asBoolean ?: false
         )
     }
 
