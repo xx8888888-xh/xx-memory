@@ -40,25 +40,25 @@ private val LightColorScheme = lightColorScheme(
 )
 
 /**
- * 墨水屏专用配色：仅使用黑、白、灰。永远白底黑字。
+ * 墨水屏专用配色：白底黑字，图标用灰色，仅小面积边框用黑色。
  */
 private val EinkColorScheme = lightColorScheme(
-    primary = Color.Black,
+    primary = Color.DarkGray,
     onPrimary = Color.White,
-    primaryContainer = Color.White,
+    primaryContainer = Color(0xFFE0E0E0),
     onPrimaryContainer = Color.Black,
-    secondary = Color.DarkGray,
+    secondary = Color.Gray,
     onSecondary = Color.White,
-    secondaryContainer = Color.LightGray,
+    secondaryContainer = Color(0xFFE8E8E8),
     background = Color.White,
     onBackground = Color.Black,
     surface = Color.White,
     onSurface = Color.Black,
     surfaceVariant = Color(0xFFE0E0E0),
-    onSurfaceVariant = Color.DarkGray,
+    onSurfaceVariant = Color.Gray,
     outline = Color(0xFFB0B0B0),
     outlineVariant = Color(0xFFD0D0D0),
-    error = Color.Black,
+    error = Color.DarkGray,
     errorContainer = Color(0xFFE0E0E0),
     onError = Color.White,
     tertiary = Color.Gray

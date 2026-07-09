@@ -23,8 +23,7 @@ data class SettingsUiState(
     val shuffleCards: Boolean = false,
     val showDetailFirst: Boolean = false,
     val algorithmType: String = "SM-2",
-    val reminderHour: Int = 20,
-    val reminderMinute: Int = 0,
+    val reminderTimeSlots: List<String> = listOf("20:00"),
     val userName: String = "用户",
     val userEmail: String = "user@example.com",
     val permissionRationale: String? = null
@@ -49,11 +48,20 @@ class SettingsViewModel : ViewModel() {
             shuffleCards = settingsManager.shuffleCards,
             showDetailFirst = settingsManager.showDetailFirst,
             algorithmType = settingsManager.algorithmType,
-            reminderHour = settingsManager.reminderHour,
-            reminderMinute = settingsManager.reminderMinute,
+            reminderTimeSlots = parseSlots(settingsManager.reminderTimeSlots),
             userName = settingsManager.userName,
             userEmail = settingsManager.userEmail
         )
+    }
+
+    private fun parseSlots(slotsStr: String): List<String> {
+        return slotsStr.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+    }
+
+    private fun serializeSlots(slots: List<String>): String {
+        return slots.joinToString(",")
     }
 
     fun toggleEinkMode(enabled: Boolean) {
@@ -88,9 +96,9 @@ class SettingsViewModel : ViewModel() {
         settingsManager.dailyReminder = enabled
         _uiState.value = _uiState.value.copy(dailyReminder = enabled)
         if (enabled) {
-            NotificationScheduler.scheduleDailyReminder(context)
+            NotificationScheduler.scheduleReminders(context)
         } else {
-            NotificationScheduler.cancelDailyReminder(context)
+            NotificationScheduler.cancelAllReminders(context)
         }
         return true
     }
@@ -137,17 +145,28 @@ class SettingsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(algorithmType = type)
     }
 
-    fun setReminderTime(hour: Int, minute: Int) {
-        val clampedHour = hour.coerceIn(0, 23)
-        val clampedMinute = minute.coerceIn(0, 59)
-        settingsManager.reminderHour = clampedHour
-        settingsManager.reminderMinute = clampedMinute
-        _uiState.value = _uiState.value.copy(
-            reminderHour = clampedHour,
-            reminderMinute = clampedMinute
-        )
-        if (settingsManager.dailyReminder) {
-            NotificationScheduler.scheduleDailyReminder(XxMemoryApplication.instance)
+    fun addReminderSlot(hour: Int, minute: Int) {
+        val slot = "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+        val current = _uiState.value.reminderTimeSlots.toMutableList()
+        if (slot !in current) {
+            current.add(slot)
+            current.sort()
+            settingsManager.reminderTimeSlots = serializeSlots(current)
+            _uiState.value = _uiState.value.copy(reminderTimeSlots = current)
+            if (settingsManager.dailyReminder) {
+                NotificationScheduler.rescheduleReminders(XxMemoryApplication.instance)
+            }
+        }
+    }
+
+    fun removeReminderSlot(slot: String) {
+        val current = _uiState.value.reminderTimeSlots.toMutableList()
+        if (current.remove(slot)) {
+            settingsManager.reminderTimeSlots = serializeSlots(current)
+            _uiState.value = _uiState.value.copy(reminderTimeSlots = current)
+            if (settingsManager.dailyReminder) {
+                NotificationScheduler.rescheduleReminders(XxMemoryApplication.instance)
+            }
         }
     }
 

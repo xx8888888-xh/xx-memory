@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,6 +31,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,11 +42,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.data.entity.Card
+import com.xxmemory.app.ui.statistics.StatisticsViewModel
+import com.xxmemory.app.ui.statistics.StatisticsUiState
+import com.xxmemory.app.ui.statistics.WeeklyDayStat
+import com.xxmemory.app.ui.statistics.SubjectMastery
 import com.xxmemory.app.ui.theme.rememberEinkMode
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -54,9 +59,12 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     onNavigateToReview: () -> Unit = {},
-    viewModel: HomeViewModel = viewModel()
+    onNavigateToSettings: () -> Unit = {},
+    viewModel: HomeViewModel = viewModel(),
+    statsViewModel: StatisticsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val statsState by statsViewModel.uiState.collectAsState()
     val isEinkMode = rememberEinkMode()
 
     if (uiState.isLoading) {
@@ -83,10 +91,23 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp)
     ) {
-        // Greeting header
+        // Top bar with greeting and settings icon
         item {
             Spacer(modifier = Modifier.height(16.dp))
-            GreetingHeader()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                GreetingHeader()
+                IconButton(onClick = onNavigateToSettings) {
+                    Icon(
+                        imageVector = Icons.Filled.Settings,
+                        contentDescription = "设置",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
             Spacer(modifier = Modifier.height(12.dp))
             CardCountBadge(totalCards = uiState.totalCards, dueCount = uiState.dueCount, todayReviewed = uiState.todayReviewed)
             Spacer(modifier = Modifier.height(16.dp))
@@ -191,8 +212,74 @@ fun HomeScreen(
             }
         }
 
+        // Statistics section embedded in home page
         item {
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "学习统计",
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Streak ring
+        item {
+            StreakRing(streakDays = statsState.streakDays, isEinkMode = isEinkMode)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Stats cards row
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                StatCard(
+                    title = "今日复习",
+                    value = "${statsState.todayReviewed}",
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    title = "总复习数",
+                    value = "${statsState.totalReviewed}",
+                    modifier = Modifier.weight(1f)
+                )
+                StatCard(
+                    title = "总卡片数",
+                    value = "${statsState.totalCards}",
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Weekly trend chart
+        item {
+            WeeklyTrendChart(weeklyStats = statsState.weeklyStats, isEinkMode = isEinkMode)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        // Subject mastery
+        if (statsState.subjectMastery.isNotEmpty()) {
+            item {
+                Text(
+                    text = "科目掌握度",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            items(statsState.subjectMastery) { subject ->
+                SubjectMasteryBar(subject = subject, isEinkMode = isEinkMode)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        item {
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -330,7 +417,8 @@ private fun ProgressSection(todayReviewed: Int, dueCount: Int, isEinkMode: Boole
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 1.dp)
     ) {
         Row(
             modifier = Modifier
@@ -491,6 +579,208 @@ private fun DueCardItem(card: Card, isEinkMode: Boolean, onCardClick: () -> Unit
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+// --- Statistics components (embedded in home) ---
+
+@Composable
+private fun StreakRing(streakDays: Int, isEinkMode: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.size(80.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isEinkMode) {
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .border(4.dp, MaterialTheme.colorScheme.onSurface, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$streakDays",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                } else {
+                    val progress = ((streakDays % 7).coerceAtLeast(0) / 7f).let { if (it == 0f && streakDays > 0) 1f else it }
+                    CircularProgressIndicator(
+                        progress = progress,
+                        modifier = Modifier.size(80.dp),
+                        color = MaterialTheme.colorScheme.secondary,
+                        trackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f),
+                        strokeWidth = 8.dp
+                    )
+                    Text(
+                        text = "$streakDays",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = "连续学习",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "$streakDays 天",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatCard(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeeklyTrendChart(weeklyStats: List<WeeklyDayStat>, isEinkMode: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Text(
+                text = "本周学习趋势",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val maxCount = weeklyStats.maxOfOrNull { it.count }?.coerceAtLeast(1) ?: 1
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(120.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                weeklyStats.forEach { stat ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "${stat.count}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(24.dp)
+                                .height(((stat.count.toFloat() / maxCount) * 80).dp.coerceAtLeast(4.dp))
+                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                .background(MaterialTheme.colorScheme.primary)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stat.dayName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubjectMasteryBar(subject: SubjectMastery, isEinkMode: Boolean) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 1.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = subject.subject,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${subject.masteredCards}/${subject.totalCards}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            val progress = subject.masteredCards.toFloat() / subject.totalCards.coerceAtLeast(1)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .height(8.dp)
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
         }
     }
 }

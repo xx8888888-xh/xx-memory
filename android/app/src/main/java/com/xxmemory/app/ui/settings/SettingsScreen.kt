@@ -23,9 +23,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
@@ -40,6 +42,7 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
@@ -217,8 +220,8 @@ fun SettingsScreen(
         SettingsCard {
             SwitchItem(
                 icon = Icons.Filled.Notifications,
-                title = "每日复习提醒",
-                subtitle = "每天 ${uiState.reminderHour.toString().padStart(2, '0')}:${uiState.reminderMinute.toString().padStart(2, '0')} 提醒复习",
+                title = "复习提醒",
+                subtitle = "有卡片到期时在指定时间点提醒",
                 checked = uiState.dailyReminder,
                 onCheckedChange = {
                     val success = viewModel.toggleDailyReminder(it)
@@ -227,13 +230,88 @@ fun SettingsScreen(
                     }
                 }
             )
-            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
-            SettingsItem(
-                icon = Icons.Filled.AccessTime,
-                title = "提醒时间",
-                subtitle = "${uiState.reminderHour.toString().padStart(2, '0')}:${uiState.reminderMinute.toString().padStart(2, '0')}",
-                onClick = { showTimePickerDialog = true }
-            )
+            if (uiState.dailyReminder) {
+                Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "提醒时间点",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "${uiState.reminderTimeSlots.size} 个",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    uiState.reminderTimeSlots.forEach { slot ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Filled.AccessTime,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = slot,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            IconButton(
+                                onClick = { viewModel.removeReminderSlot(slot) },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "删除",
+                                    tint = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { showTimePickerDialog = true }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "添加提醒时间点",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+            }
         }
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -271,11 +349,11 @@ fun SettingsScreen(
 
     if (showTimePickerDialog) {
         TimePickerDialog(
-            currentHour = uiState.reminderHour,
-            currentMinute = uiState.reminderMinute,
+            currentHour = 9,
+            currentMinute = 0,
             onDismiss = { showTimePickerDialog = false },
             onConfirm = { hour, minute ->
-                viewModel.setReminderTime(hour, minute)
+                viewModel.addReminderSlot(hour, minute)
                 showTimePickerDialog = false
             }
         )

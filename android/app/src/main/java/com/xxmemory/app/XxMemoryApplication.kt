@@ -24,7 +24,7 @@ class XxMemoryApplication : Application() {
         _settingsManager = SettingsManager(this)
         createNotificationChannel()
         if (_settingsManager.dailyReminder) {
-            NotificationScheduler.scheduleDailyReminder(this)
+            NotificationScheduler.scheduleReminders(this)
         }
     }
 

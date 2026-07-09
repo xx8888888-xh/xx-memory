@@ -11,7 +11,7 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val app = context.applicationContext as? XxMemoryApplication ?: return
         if (app.settingsManager.dailyReminder) {
-            NotificationScheduler.scheduleDailyReminder(context)
+            NotificationScheduler.scheduleReminders(context)
         }
     }
 }

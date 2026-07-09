@@ -34,13 +34,13 @@ class SettingsManager(context: Context) {
         get() = prefs.getString("algorithm_type", "SM-2") ?: "SM-2"
         set(value) = prefs.edit().putString("algorithm_type", value).apply()
 
-    var reminderHour: Int
-        get() = prefs.getInt("reminder_hour", 20)
-        set(value) = prefs.edit().putInt("reminder_hour", value).apply()
-
-    var reminderMinute: Int
-        get() = prefs.getInt("reminder_minute", 0)
-        set(value) = prefs.edit().putInt("reminder_minute", value).apply()
+    /**
+     * Comma-separated reminder time slots in "HH:mm" format, e.g. "08:00,12:00,20:00".
+     * Reminders fire at each slot when there are due cards.
+     */
+    var reminderTimeSlots: String
+        get() = prefs.getString("reminder_time_slots", "20:00") ?: "20:00"
+        set(value) = prefs.edit().putString("reminder_time_slots", value).apply()
 
     var userName: String
         get() = prefs.getString("user_name", "用户") ?: "用户"

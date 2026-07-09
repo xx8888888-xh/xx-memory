@@ -1,95 +1,285 @@
 {
-  "name": "xx-memory-document-parser",
+  "skillName": "xx-memory-flashcard-generator",
   "version": "1.0.0",
-  "description": "AI 文档解析与记忆卡片生成工作流，用于将外部文档自动转化为 xx memory 应用中的复习卡片。",
-  "workflow": {
-    "steps": [
-      {
-        "step": 1,
-        "name": "接收文档",
-        "description": "接收用户上传或粘贴的文档内容，以及可选的格式提示（JSON / CSV / TXT / Markdown）。",
-        "input": ["document_content", "document_format_hint"],
-        "output": ["raw_content", "detected_format"]
-      },
-      {
-        "step": 2,
-        "name": "解析结构",
-        "description": "根据检测到的格式策略，将原始内容解析为结构化数据。",
-        "input": ["raw_content", "detected_format"],
-        "output": ["structured_items"]
-      },
-      {
-        "step": 3,
-        "name": "提取问答对",
-        "description": "从结构化数据中识别问题（question）和答案（answer），并提取可选的 subject 与 detail。",
-        "input": ["structured_items"],
-        "output": ["qa_pairs"]
-      },
-      {
-        "step": 4,
-        "name": "生成卡片",
-        "description": "将问答对映射为 xx memory 的 Card 实体，确保 question 和 answer 非空。",
-        "input": ["qa_pairs"],
-        "output": ["cards"]
-      },
-      {
-        "step": 5,
-        "name": "提交入库",
-        "description": "将生成的卡片列表通过应用接口写入本地数据库，返回导入结果统计。",
-        "input": ["cards"],
-        "output": ["import_result"]
-      }
-    ]
-  },
-  "format_strategies": [
-    {
-      "format": "JSON",
-      "description": "标准 JSON 数组，每项包含 question、answer，可选 subject 和 detail。",
-      "example": {
-        "cards": [
-          {
-            "question": "Kotlin 中 data class 的作用是什么？",
-            "answer": "自动生成 equals、hashCode、toString、copy 和 componentN 函数。",
-            "subject": "Kotlin",
-            "detail": "适用于不可变数据模型。"
-          },
-          {
-            "question": "什么是协程？",
-            "answer": "轻量级线程，支持挂起和恢复，不会阻塞底层线程。",
-            "subject": "Kotlin"
-          }
-        ]
-      }
-    },
-    {
-      "format": "CSV",
-      "description": "CSV 表格，支持 question、answer、subject、detail 四列。第一行可以为标题行。",
-      "example": "question,answer,subject,detail\n\"什么是 JVM？\",\"Java 虚拟机，负责字节码的解释执行与内存管理。\",\"Java\",\"运行时核心组件\"\n\"什么是 GC？\",\"垃圾回收机制，自动释放不再使用的内存。\",\"Java\",\"内存管理\""
-    },
-    {
-      "format": "TXT",
-      "description": "纯文本段落。优先识别 Q: / A: 标记；若无标记，则按空行分割后两两配对。",
-      "example": "Q: 什么是依赖注入？\nA: 由外部容器负责创建和注入对象依赖，降低模块耦合。\n\nQ: 什么是单例模式？\nA: 确保一个类只有一个实例，并提供一个全局访问点。"
-    },
-    {
-      "format": "Markdown",
-      "description": "Markdown 文档。优先识别 # Q: / # A: 标记；若无标记，则以二级标题作为问题，后续段落作为答案。",
-      "example": "## 什么是 Room？\nRoom 是 Android 官方推荐的 SQLite ORM 框架，通过注解定义实体、DAO 和数据库。\n\n## 什么是 WorkManager？\nWorkManager 是 Android 后台任务调度库，支持可延迟、可约束的可靠任务执行。"
-    }
+  "targetApp": "xx memory (通用智能记忆助手) Android App",
+  "purpose": "Enable any AI agent to generate flashcard files in formats the xx memory app can import. The AI reads this skill definition, then produces ready-to-import files (JSON, CSV, TXT, or Markdown) containing well-structured memory cards following the app's schema and quality standards.",
+  "whenToUse": [
+    "A user asks the AI to create flashcards / memory cards / 记忆卡片 for the xx memory app.",
+    "A user asks to convert their notes, textbook content, code snippets, or study material into importable flashcard files.",
+    "A user explicitly mentions any of the supported import formats (JSON / CSV / TXT / Markdown) for xx memory.",
+    "A user references 'xx memory', '通用智能记忆助手', or asks for cards compatible with this app's import flow."
   ],
-  "validation_rules": {
-    "required_fields": ["question", "answer"],
-    "filter_empty": true,
-    "trim_whitespace": true,
-    "max_question_length": 2000,
-    "max_answer_length": 10000
+  "supportedCardTypes": {
+    "qa": {
+      "name": "问答 (Question & Answer)",
+      "description": "Classic front/back card. Use question as the prompt and answer as the expected response.",
+      "requiredFields": ["question", "answer"],
+      "example": { "cardType": "qa", "question": "What is the capital of France?", "answer": "Paris" }
+    },
+    "fill_blank": {
+      "name": "填空 (Fill in the Blank)",
+      "description": "A cloze-style card. Put the blank token (e.g. ___) inside the question and supply the missing text in answer.",
+      "requiredFields": ["question", "answer"],
+      "example": { "cardType": "fill_blank", "question": "The powerhouse of the cell is the ___.", "answer": "mitochondria" }
+    },
+    "code": {
+      "name": "代码 (Code)",
+      "description": "Programming card. Place the code problem / prompt in question and the code (optionally with explanation) in answer. Preserve indentation and newlines exactly.",
+      "requiredFields": ["question", "answer"],
+      "example": { "cardType": "code", "question": "Reverse a string in Python.", "answer": "def reverse(s):\n    return s[::-1]" }
+    },
+    "image": {
+      "name": "图片 (Image)",
+      "description": "Visual recall card. imageUrl is required and must be a valid URL or local path resolvable by the app. question is the caption / prompt, answer is the expected recall target.",
+      "requiredFields": ["question", "answer", "imageUrl"],
+      "example": { "cardType": "image", "question": "Identify this organelle.", "answer": "Mitochondria", "imageUrl": "https://example.com/mito.png" }
+    },
+    "audio": {
+      "name": "音频 (Audio)",
+      "description": "Audio recall card. audioUrl is required. question is the prompt, answer is what the learner should recognize or recall after listening.",
+      "requiredFields": ["question", "answer", "audioUrl"],
+      "example": { "cardType": "audio", "question": "Which bird produces this call?", "answer": "Common Cuckoo", "audioUrl": "https://example.com/cuckoo.mp3" }
+    }
   },
-  "api": {
-    "entry_point": "com.xxmemory.app.domain.parser.DocumentParser",
-    "implementations": [
-      "com.xxmemory.app.domain.parser.MarkdownParser",
-      "com.xxmemory.app.domain.parser.CsvParser",
-      "com.xxmemory.app.domain.parser.TxtParser"
-    ]
-  }
+  "cardFields": {
+    "question": {
+      "type": "string",
+      "required": true,
+      "description": "The front of the card / the prompt shown to the learner."
+    },
+    "answer": {
+      "type": "string",
+      "required": true,
+      "description": "The back of the card / the expected response."
+    },
+    "subject": {
+      "type": "string",
+      "required": false,
+      "default": "未分类",
+      "description": "Category / subject grouping (e.g. Biology, JavaScript, Spanish). Cards with the same subject are grouped together in the app."
+    },
+    "detail": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Optional extra explanation shown after the answer is revealed. Use for context, mnemonics, or source references."
+    },
+    "cardType": {
+      "type": "string",
+      "required": true,
+      "enum": ["qa", "fill_blank", "code", "image", "audio"],
+      "default": "qa",
+      "description": "Determines how the card is rendered and reviewed. Must be one of the supported card types."
+    },
+    "tags": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Comma-separated tag list (e.g. 'algebra,exam,chapter3'). Used for filtering and search."
+    },
+    "imageUrl": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "URL or local path to an image. Required when cardType=image, otherwise empty."
+    },
+    "audioUrl": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "URL or local path to an audio file. Required when cardType=audio, otherwise empty."
+    },
+    "isFavorite": {
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "description": "Whether the card is marked as favorite / starred in the app."
+    }
+  },
+  "outputFormats": {
+    "json": {
+      "description": "A JSON array of card objects. Recommended format — lossless and easiest to validate.",
+      "mimeType": "application/json",
+      "rules": [
+        "Root element MUST be a JSON array, even for a single card.",
+        "Every object MUST contain at minimum: question, answer, cardType.",
+        "Use UTF-8 encoding. Preserve all newlines in code answers with \\n.",
+        "Booleans (isFavorite) MUST be JSON true/false, not strings.",
+        "Omit or leave empty string for optional fields you do not use; do not use null.",
+        "Do not include comments, trailing commas, or BOM."
+      ],
+      "example": [
+        {
+          "question": "What is the time complexity of binary search?",
+          "answer": "O(log n)",
+          "subject": "Algorithms",
+          "detail": "Halves the search space each step.",
+          "cardType": "qa",
+          "tags": "complexity,search,basics",
+          "imageUrl": "",
+          "audioUrl": "",
+          "isFavorite": false
+        },
+        {
+          "question": "Complete: The keyword to define a constant in JavaScript is ___.",
+          "answer": "const",
+          "subject": "JavaScript",
+          "detail": "",
+          "cardType": "fill_blank",
+          "tags": "syntax,es6",
+          "imageUrl": "",
+          "audioUrl": "",
+          "isFavorite": true
+        },
+        {
+          "question": "Write a function to check if a number is even in Python.",
+          "answer": "def is_even(n):\n    return n % 2 == 0",
+          "subject": "Python",
+          "detail": "Uses the modulo operator.",
+          "cardType": "code",
+          "tags": "functions,basics",
+          "imageUrl": "",
+          "audioUrl": "",
+          "isFavorite": false
+        },
+        {
+          "question": "What organelle is shown?",
+          "answer": "Mitochondria",
+          "subject": "Biology",
+          "detail": "",
+          "cardType": "image",
+          "tags": "cell,organelle",
+          "imageUrl": "https://example.com/mito.png",
+          "audioUrl": "",
+          "isFavorite": false
+        },
+        {
+          "question": "Which instrument plays this melody?",
+          "answer": "Violin",
+          "subject": "Music",
+          "detail": "",
+          "cardType": "audio",
+          "tags": "strings,listening",
+          "imageUrl": "",
+          "audioUrl": "https://example.com/violin.mp3",
+          "isFavorite": false
+        }
+      ]
+    },
+    "csv": {
+      "description": "Comma-separated values with a header row. Useful for spreadsheet workflows.",
+      "mimeType": "text/csv",
+      "rules": [
+        "First line MUST be the header row with these exact columns in order: question,answer,subject,detail,cardType,tags,imageUrl,audioUrl,isFavorite",
+        "Every subsequent line is one card.",
+        "Fields containing commas, double quotes, or newlines MUST be wrapped in double quotes.",
+        "Inside quoted fields, escape double quotes by doubling them (\"\").",
+        "Newlines inside a field (e.g. code answers) MUST be wrapped in double quotes.",
+        "isFavorite values must be true or false (lowercase).",
+        "Use UTF-8 encoding."
+      ],
+      "headerRow": "question,answer,subject,detail,cardType,tags,imageUrl,audioUrl,isFavorite",
+      "example": "question,answer,subject,detail,cardType,tags,imageUrl,audioUrl,isFavorite\n\"What is the time complexity of binary search?\",\"O(log n)\",Algorithms,\"Halves the search space each step.\",qa,\"complexity,search,basics\",,,false\n\"Complete: The keyword to define a constant in JavaScript is ___.\",const,JavaScript,,fill_blank,syntax,es6,,true\n\"Write a function to check if a number is even in Python.\",\"def is_even(n):\\n    return n % 2 == 0\",Python,\"Uses the modulo operator.\",code,\"functions,basics\",,,false\n\"What organelle is shown?\",Mitochondria,Biology,,image,\"cell,organelle\",https://example.com/mito.png,,false\n\"Which instrument plays this melody?\",Violin,Music,,audio,strings,listening,,https://example.com/violin.mp3,false"
+    },
+    "txt": {
+      "description": "Plain-text marker format. One card per block, blocks separated by a blank line. Human-friendly and diff-friendly.",
+      "mimeType": "text/plain",
+      "rules": [
+        "Each card is a block of lines; separate cards with a single blank line.",
+        "The block MUST start with a Q: line containing the question.",
+        "The block MUST contain an A: line containing the answer.",
+        "Optional metadata lines (any order, after Q:/A:) begin with one of: Subject:, Detail:, CardType:, Tags:, ImageUrl:, AudioUrl:, Favorite:.",
+        "CardType defaults to qa if omitted. Allowed values: qa, fill_blank, code, image, audio.",
+        "Favorite: line accepts true or false (case-insensitive); defaults to false.",
+        "Tags: is a comma-separated list on a single line.",
+        "For multi-line code answers, indent continuation lines with 4 spaces, or wrap the entire answer following A: on subsequent indented lines.",
+        "Use UTF-8 encoding."
+      ],
+      "markers": {
+        "Q:": "question (required)",
+        "A:": "answer (required)",
+        "Subject:": "subject (optional)",
+        "Detail:": "detail (optional)",
+        "CardType:": "cardType (optional, default qa)",
+        "Tags:": "tags (optional, comma-separated)",
+        "ImageUrl:": "imageUrl (optional, required for image cards)",
+        "AudioUrl:": "audioUrl (optional, required for audio cards)",
+        "Favorite:": "isFavorite (optional, default false)"
+      },
+      "example": "Q: What is the time complexity of binary search?\nA: O(log n)\nSubject: Algorithms\nDetail: Halves the search space each step.\nCardType: qa\nTags: complexity,search,basics\nFavorite: false\n\nQ: Complete: The keyword to define a constant in JavaScript is ___.\nA: const\nSubject: JavaScript\nCardType: fill_blank\nTags: syntax,es6\nFavorite: true\n\nQ: Write a function to check if a number is even in Python.\nA: def is_even(n):\n    return n % 2 == 0\nSubject: Python\nDetail: Uses the modulo operator.\nCardType: code\nTags: functions,basics\n\nQ: What organelle is shown?\nA: Mitochondria\nSubject: Biology\nCardType: image\nTags: cell,organelle\nImageUrl: https://example.com/mito.png\n\nQ: Which instrument plays this melody?\nA: Violin\nSubject: Music\nCardType: audio\nTags: strings,listening\nAudioUrl: https://example.com/violin.mp3"
+    },
+    "markdown": {
+      "description": "Markdown format using headings to delimit cards and metadata lines for app-specific fields.",
+      "mimeType": "text/markdown",
+      "rules": [
+        "Each card is a level-2 heading section starting with '## ' followed by the question text.",
+        "Immediately under the heading, the answer MUST appear as a paragraph prefixed with '**Answer:** ' (or a line starting with 'Answer: ').",
+        "Optional detail follows as a paragraph prefixed with '**Detail:** '.",
+        "App metadata uses heading-comments / list lines beginning with '# Tags:', '# CardType:', '# Subject:', '# ImageUrl:', '# AudioUrl:', '# Favorite:'.",
+        "CardType defaults to qa. Allowed: qa, fill_blank, code, image, audio.",
+        "Favorite accepts true / false; defaults to false.",
+        "Code answers SHOULD use a fenced code block (```), preserving indentation.",
+        "Separate cards with a horizontal rule (---) or a blank line plus the next '## ' heading.",
+        "Use UTF-8 encoding."
+      ],
+      "example": "## What is the time complexity of binary search?\n\n**Answer:** O(log n)\n\n**Detail:** Halves the search space each step.\n\n# Subject: Algorithms\n# CardType: qa\n# Tags: complexity,search,basics\n# Favorite: false\n\n---\n\n## Complete: The keyword to define a constant in JavaScript is ___.\n\n**Answer:** const\n\n# Subject: JavaScript\n# CardType: fill_blank\n# Tags: syntax,es6\n# Favorite: true\n\n---\n\n## Write a function to check if a number is even in Python.\n\n**Answer:**\n\n```python\ndef is_even(n):\n    return n % 2 == 0\n```\n\n**Detail:** Uses the modulo operator.\n\n# Subject: Python\n# CardType: code\n# Tags: functions,basics\n\n---\n\n## What organelle is shown?\n\n**Answer:** Mitochondria\n\n![card image](https://example.com/mito.png)\n\n# Subject: Biology\n# CardType: image\n# Tags: cell,organelle\n# ImageUrl: https://example.com/mito.png\n\n---\n\n## Which instrument plays this melody?\n\n**Answer:** Violin\n\n# Subject: Music\n# CardType: audio\n# Tags: strings,listening\n# AudioUrl: https://example.com/violin.mp3"
+    }
+  },
+  "qualityGuidelines": {
+    "atomicity": "One concept per card. If a question needs two answers, split it into two cards.",
+    "conciseness": "Keep questions and answers short. Aim for answers that fit on one line where possible; move lengthy context into the detail field.",
+    "clarity": "Use plain, unambiguous language. Avoid pronouns whose referent is unclear without surrounding context.",
+    "selfContained": "Each card must be understandable in isolation, without relying on previous cards.",
+    "answerSpecificity": "Answers should be specific and verifiable. Avoid 'it depends' style answers; if nuance is needed, put it in detail.",
+    "codeCards": "Code must be syntactically valid for the stated language and preserve exact indentation/newlines. Include only the minimal code that answers the question.",
+    "tags": "Use 2–5 meaningful tags per card. Prefer lowercase, no spaces inside a tag (use hyphens if needed).",
+    "subject": "Reuse consistent subject names across cards so they group cleanly in the app.",
+    "noDuplicates": "Do not emit duplicate cards. Merge or discard near-duplicates before writing the file.",
+    "avoidTriviaOnly": "Favor understanding and recall over rote trivia; prefer questions that probe concepts over isolated facts when possible."
+  },
+  "generationProcedure": [
+    "Identify the source material (notes, textbook, code, audio/image list) the user provides.",
+    "Choose the target output format. If unspecified, default to JSON.",
+    "Break the material into atomic concepts and decide a cardType for each.",
+    "Draft question + answer pairs; put supporting context into detail, not into the question.",
+    "Assign a consistent subject and 2–5 tags per card.",
+    "If cardType is image/audio, ensure imageUrl/audioUrl is present and resolvable.",
+    "Render the cards in the chosen format, following its rules exactly (see outputFormats).",
+    "Validate: every card has question, answer, cardType; every image card has imageUrl; every audio card has audioUrl; no duplicate Q/A pairs.",
+    "Return the file content to the user (and, if writing to disk, save with the appropriate extension: .json / .csv / .txt / .md)."
+  ],
+  "fileExtensions": {
+    "json": ".json",
+    "csv": ".csv",
+    "txt": ".txt",
+    "markdown": ".md"
+  },
+  "validationChecklist": [
+    "All required fields present (question, answer, cardType) on every card.",
+    "cardType is one of: qa, fill_blank, code, image, audio.",
+    "image cards have a non-empty imageUrl; audio cards have a non-empty audioUrl.",
+    "No duplicate questions within the file.",
+    "Tags are comma-separated with no spaces inside individual tags (spaces around commas are tolerated).",
+    "Encoding is UTF-8; no BOM.",
+    "JSON: array root, valid JSON, no trailing commas.",
+    "CSV: header row exact, quoted fields where needed, newlines within quotes.",
+    "TXT: Q:/A: present, blank line between cards.",
+    "Markdown: '## ' heading per card, Answer line present, metadata lines prefixed with '# '."
+  ],
+  "defaults": {
+    "cardType": "qa",
+    "subject": "未分类",
+    "tags": "",
+    "detail": "",
+    "imageUrl": "",
+    "audioUrl": "",
+    "isFavorite": false,
+    "outputFormat": "json",
+    "encoding": "UTF-8"
+  },
+  "notes": [
+    "This skill is format-only. It does not interact with the xx memory app's database or scheduling engine; the app imports these files through its own import flow.",
+    "When in doubt about field semantics, prefer the JSON format — it is lossless and unambiguous.",
+    "If the user gives existing flashcards in one format and asks to convert to another, parse using the source format's rules then re-render using the target format's rules; do not change card content."
+  ]
 }

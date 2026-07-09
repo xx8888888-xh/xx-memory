@@ -22,8 +22,8 @@ class AlarmReceiver : BroadcastReceiver() {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            // Always schedule the next occurrence so the daily chain is not broken.
-            NotificationScheduler.scheduleDailyReminder(context)
+            // Reschedule all reminder time slots so the chain is not broken.
+            NotificationScheduler.rescheduleReminders(context)
         } finally {
             if (wakeLock.isHeld) wakeLock.release()
             pendingResult.finish()

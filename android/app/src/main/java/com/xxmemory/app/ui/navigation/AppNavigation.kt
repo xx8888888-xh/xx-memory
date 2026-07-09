@@ -1,17 +1,15 @@
 package com.xxmemory.app.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.FileUpload
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.School
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -33,8 +31,8 @@ import androidx.navigation.compose.rememberNavController
 import com.xxmemory.app.ui.home.HomeScreen
 import com.xxmemory.app.ui.import.ImportScreen
 import com.xxmemory.app.ui.review.ReviewScreen
-import com.xxmemory.app.ui.statistics.StatisticsScreen
 import com.xxmemory.app.ui.settings.SettingsScreen
+import com.xxmemory.app.ui.theme.rememberEinkMode
 
 sealed class Screen(
     val route: String,
@@ -45,17 +43,17 @@ sealed class Screen(
     object Home : Screen("home", "主页", Icons.Filled.Home, Icons.Outlined.Home)
     object Import : Screen("import", "导入", Icons.Filled.FileUpload, Icons.Outlined.FileUpload)
     object Review : Screen("review", "复习", Icons.Filled.School, Icons.Outlined.School)
-    object Statistics : Screen("statistics", "统计", Icons.Filled.BarChart, Icons.Outlined.BarChart)
-    object Settings : Screen("settings", "设置", Icons.Filled.Settings, Icons.Outlined.Settings)
+    object Settings : Screen("settings", "设置", Icons.Filled.Home, Icons.Outlined.Home)
 }
 
 val bottomNavItems = listOf(
-    Screen.Home, Screen.Import, Screen.Review, Screen.Statistics, Screen.Settings
+    Screen.Home, Screen.Import, Screen.Review
 )
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+    val isEinkMode = rememberEinkMode()
 
     Scaffold(
         bottomBar = {
@@ -65,26 +63,34 @@ fun AppNavigation() {
         NavHost(
             navController = navController,
             startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { if (isEinkMode) EnterTransition.None else androidx.compose.animation.fadeIn() },
+            exitTransition = { if (isEinkMode) ExitTransition.None else androidx.compose.animation.fadeOut() },
+            popEnterTransition = { if (isEinkMode) EnterTransition.None else androidx.compose.animation.fadeIn() },
+            popExitTransition = { if (isEinkMode) ExitTransition.None else androidx.compose.animation.fadeOut() }
         ) {
             composable(Screen.Home.route) {
-                HomeScreen(onNavigateToReview = {
-                    navController.navigate(Screen.Review.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                HomeScreen(
+                    onNavigateToReview = {
+                        navController.navigate(Screen.Review.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
                         }
-                        launchSingleTop = true
+                    },
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.Settings.route) {
+                            launchSingleTop = true
+                        }
                     }
-                })
+                )
             }
             composable(Screen.Import.route) {
                 ImportScreen()
             }
             composable(Screen.Review.route) {
                 ReviewScreen()
-            }
-            composable(Screen.Statistics.route) {
-                StatisticsScreen()
             }
             composable(Screen.Settings.route) {
                 SettingsScreen()
@@ -122,8 +128,8 @@ private fun BottomNavBar(navController: NavHostController) {
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.onSurface,
-                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )

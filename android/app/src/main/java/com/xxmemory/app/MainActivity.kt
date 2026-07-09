@@ -104,6 +104,6 @@ class MainActivity : ComponentActivity() {
                 return
             }
         }
-        NotificationScheduler.scheduleDailyReminder(context)
+        NotificationScheduler.scheduleReminders(context)
     }
 }

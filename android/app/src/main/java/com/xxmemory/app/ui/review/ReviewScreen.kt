@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.xxmemory.app.data.entity.Card as CardEntity
+import com.xxmemory.app.domain.EbbinghausAlgorithm
 import com.xxmemory.app.ui.theme.rememberEinkMode
 import java.util.Locale
 
@@ -333,6 +334,7 @@ fun ReviewScreen(
                 ) {
                     AssessmentButton(
                         text = "忘记",
+                        hint = getIntervalPreview(card, 0),
                         color = MaterialTheme.colorScheme.error,
                         isEinkMode = isEinkMode,
                         modifier = Modifier.weight(1f),
@@ -340,6 +342,7 @@ fun ReviewScreen(
                     )
                     AssessmentButton(
                         text = "困难",
+                        hint = getIntervalPreview(card, 1),
                         color = MaterialTheme.colorScheme.secondary,
                         isEinkMode = isEinkMode,
                         modifier = Modifier.weight(1f),
@@ -347,6 +350,7 @@ fun ReviewScreen(
                     )
                     AssessmentButton(
                         text = "良好",
+                        hint = getIntervalPreview(card, 2),
                         color = MaterialTheme.colorScheme.tertiary,
                         isEinkMode = isEinkMode,
                         modifier = Modifier.weight(1f),
@@ -354,6 +358,7 @@ fun ReviewScreen(
                     )
                     AssessmentButton(
                         text = "简单",
+                        hint = getIntervalPreview(card, 3),
                         color = MaterialTheme.colorScheme.primary,
                         isEinkMode = isEinkMode,
                         modifier = Modifier.weight(1f),
@@ -473,29 +478,67 @@ private fun CardContent(
 }
 
 @Composable
+private fun getIntervalPreview(card: CardEntity, quality: Int): String {
+    val settings = remember { com.xxmemory.app.XxMemoryApplication.instance.settingsManager }
+    return remember(card.id, quality, card.repetitions, card.easeFactor, card.interval, settings.algorithmType) {
+        try {
+            val algorithm = EbbinghausAlgorithm.getAlgorithm(settings.algorithmType)
+            val result = algorithm.calculate(
+                quality = quality,
+                repetitions = card.repetitions,
+                easeFactor = card.easeFactor,
+                currentInterval = card.interval
+            )
+            formatInterval(result.nextInterval)
+        } catch (e: Exception) {
+            "?"
+        }
+    }
+}
+
+private fun formatInterval(interval: Int): String = when {
+    interval < 1 -> "今天"
+    interval == 1 -> "明天"
+    interval < 7 -> "${interval}天后"
+    interval < 30 -> "${interval / 7}周后"
+    interval < 365 -> "${interval / 30}个月后"
+    else -> "${interval / 365}年后"
+}
+
+@Composable
 private fun AssessmentButton(
     text: String,
+    hint: String,
     color: Color,
     isEinkMode: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val containerColor = if (isEinkMode) Color.Black else color.copy(alpha = 0.15f)
+    val containerColor = if (isEinkMode) Color.DarkGray else color.copy(alpha = 0.15f)
     val contentColor = if (isEinkMode) Color.White else color
     Button(
         onClick = onClick,
-        modifier = modifier.height(48.dp),
+        modifier = modifier.height(56.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = containerColor,
             contentColor = contentColor
         )
     ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.SemiBold
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = hint,
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 10.sp
+            )
+        }
     }
 }
 
