@@ -2,17 +2,17 @@ package com.xxmemory.app.ui.review
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.data.AppDatabase
 import com.xxmemory.app.data.entity.Card
 import com.xxmemory.app.data.entity.ReviewLog
 import com.xxmemory.app.data.repository.CardRepository
 import com.xxmemory.app.domain.EbbinghausAlgorithm
-import com.xxmemory.app.domain.Scheduler
-import com.xxmemory.app.XxMemoryApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 data class ReviewUiState(
     val cards: List<Card> = emptyList(),
@@ -35,8 +35,7 @@ class ReviewViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(ReviewUiState())
     val uiState: StateFlow<ReviewUiState> = _uiState.asStateFlow()
 
-    @Volatile
-    private var isAssessing = false
+    private val isAssessing = AtomicBoolean(false)
 
     init {
         val db = AppDatabase.getInstance(XxMemoryApplication.instance)
@@ -60,8 +59,8 @@ class ReviewViewModel : ViewModel() {
             }
 
             // Apply daily card limit
-            val limit = settingsManager.dailyCardLimit
-            val limitedCards = if (cards.size > limit) cards.take(limit) else cards
+            val limit = settingsManager.dailyCardLimit.coerceAtLeast(1)
+            val limitedCards = cards.take(limit)
 
             // Apply shuffle
             val finalCards = if (settingsManager.shuffleCards) limitedCards.shuffled() else limitedCards
@@ -74,7 +73,7 @@ class ReviewViewModel : ViewModel() {
                 totalCount = finalCards.size,
                 currentNumber = 1,
                 isLoading = false,
-                progress = 1f / finalCards.size
+                progress = 1f / finalCards.size.coerceAtLeast(1)
             )
         }
     }
@@ -84,13 +83,13 @@ class ReviewViewModel : ViewModel() {
     }
 
     fun assessCard(quality: Int) {
-        if (isAssessing) return
-        isAssessing = true
-        val state = _uiState.value
-        val card = state.currentCard ?: run { isAssessing = false; return }
+        if (!isAssessing.compareAndSet(false, true)) return
 
         viewModelScope.launch {
             try {
+                val state = _uiState.value
+                val card = state.currentCard ?: return@launch
+
                 val algorithm = EbbinghausAlgorithm.getAlgorithm(settingsManager.algorithmType)
                 val result = algorithm.calculate(
                     quality = quality,
@@ -102,6 +101,7 @@ class ReviewViewModel : ViewModel() {
                 val updatedCard = card.copy(
                     repetitions = result.nextRepetitions,
                     easeFactor = result.nextEaseFactor,
+                    difficulty = result.nextEaseFactor, // Keep difficulty in sync with EF.
                     interval = result.nextInterval,
                     nextReviewDate = result.nextReviewDate
                 )
@@ -122,14 +122,15 @@ class ReviewViewModel : ViewModel() {
                         completedCount = state.completedCount + 1,
                         currentCard = null,
                         isFlipped = false,
-                        nextScheduleInfo = null
+                        nextScheduleInfo = null,
+                        progress = 1f
                     )
                 } else {
                     val nextCard = state.cards[nextIndex]
                     _uiState.value = state.copy(
                         currentIndex = nextIndex,
                         currentCard = nextCard,
-                        isFlipped = false,
+                        isFlipped = settingsManager.showDetailFirst,
                         currentNumber = nextIndex + 1,
                         progress = (nextIndex + 1).toFloat() / state.cards.size,
                         completedCount = state.completedCount + 1,
@@ -137,7 +138,7 @@ class ReviewViewModel : ViewModel() {
                     )
                 }
             } finally {
-                isAssessing = false
+                isAssessing.set(false)
             }
         }
     }

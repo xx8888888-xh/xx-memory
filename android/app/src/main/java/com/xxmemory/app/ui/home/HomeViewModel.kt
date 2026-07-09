@@ -2,13 +2,14 @@ package com.xxmemory.app.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.data.AppDatabase
 import com.xxmemory.app.data.entity.Card
 import com.xxmemory.app.data.repository.CardRepository
-import com.xxmemory.app.XxMemoryApplication
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -52,11 +53,9 @@ class HomeViewModel : ViewModel() {
             val dueCards = repository.getDueCardsList(startOfDay)
             val totalCards = repository.getTotalCardsSync()
             val todayReviewed = repository.getTodayReviewCount(startOfDay, endOfDay)
+            val subjects = repository.getSubjects().first()
 
             val weekStats = mutableListOf<DayStat>()
-            val cal = Calendar.getInstance()
-            cal.timeInMillis = startOfDay
-            val todayDayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
             val dayNames = listOf("日", "一", "二", "三", "四", "五", "六")
 
             for (i in 6 downTo 0) {
@@ -77,22 +76,15 @@ class HomeViewModel : ViewModel() {
                 )
             }
 
-            _uiState.value = HomeUiState(
+            _uiState.value = _uiState.value.copy(
                 dueCards = dueCards,
                 totalCards = totalCards,
                 dueCount = dueCards.size,
                 todayReviewed = todayReviewed,
-                subjects = _uiState.value.subjects,
-                selectedSubject = null,
+                subjects = subjects,
                 weekStats = weekStats,
                 isLoading = false
             )
-        }
-
-        viewModelScope.launch {
-            repository.getSubjects().collect { subjects ->
-                _uiState.value = _uiState.value.copy(subjects = subjects)
-            }
         }
     }
 

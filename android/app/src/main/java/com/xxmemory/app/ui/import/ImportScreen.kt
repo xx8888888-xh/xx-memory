@@ -135,11 +135,14 @@ fun ImportScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // AI Skill card section
-            AiSkillSection(viewModel = viewModel)
+            AiSkillSection()
             Spacer(modifier = Modifier.height(16.dp))
 
             // Supported format chips
-            FormatChipsSection()
+            FormatChipsSection(
+                selectedFormat = uiState.selectedFormat,
+                onFormatSelected = { viewModel.selectFormat(it) }
+            )
             Spacer(modifier = Modifier.height(20.dp))
 
             // Recent imports
@@ -260,7 +263,6 @@ private fun UrlImportSection(
     onImport: (String) -> Unit
 ) {
     var showUrlField by remember { mutableStateOf(false) }
-    var localJson by remember { mutableStateOf("") }
 
     Card(
         modifier = Modifier
@@ -288,7 +290,7 @@ private fun UrlImportSection(
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "从 URL 导入",
+                        text = "从 URL / JSON 导入",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = TextPrimary
@@ -303,15 +305,15 @@ private fun UrlImportSection(
             if (showUrlField) {
                 Spacer(modifier = Modifier.height(12.dp))
                 OutlinedTextField(
-                    value = localJson,
-                    onValueChange = { localJson = it },
+                    value = urlInput,
+                    onValueChange = onUrlChange,
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("粘贴 JSON 数据...") },
                     minLines = 3
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = { onImport(localJson) },
+                    onClick = { onImport(urlInput) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Primary)
@@ -324,7 +326,7 @@ private fun UrlImportSection(
 }
 
 @Composable
-private fun AiSkillSection(viewModel: ImportViewModel) {
+private fun AiSkillSection() {
     var showAiInfo by remember { mutableStateOf(false) }
 
     Card(
@@ -394,15 +396,17 @@ private fun AiSkillSection(viewModel: ImportViewModel) {
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun FormatChipsSection() {
-    var selectedFormat by remember { mutableStateOf<String?>(null) }
+private fun FormatChipsSection(
+    selectedFormat: String,
+    onFormatSelected: (String) -> Unit
+) {
     Column {
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             FilterChip(
                 selected = selectedFormat == "JSON",
-                onClick = { selectedFormat = if (selectedFormat == "JSON") null else "JSON" },
+                onClick = { onFormatSelected(if (selectedFormat == "JSON") "" else "JSON") },
                 label = { Text("JSON") },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = Outline.copy(alpha = 0.3f)
@@ -410,7 +414,7 @@ private fun FormatChipsSection() {
             )
             FilterChip(
                 selected = selectedFormat == "CSV",
-                onClick = { selectedFormat = if (selectedFormat == "CSV") null else "CSV" },
+                onClick = { onFormatSelected(if (selectedFormat == "CSV") "" else "CSV") },
                 label = { Text("CSV") },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = Outline.copy(alpha = 0.3f)
@@ -418,7 +422,7 @@ private fun FormatChipsSection() {
             )
             FilterChip(
                 selected = selectedFormat == "TXT",
-                onClick = { selectedFormat = if (selectedFormat == "TXT") null else "TXT" },
+                onClick = { onFormatSelected(if (selectedFormat == "TXT") "" else "TXT") },
                 label = { Text("TXT") },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = Outline.copy(alpha = 0.3f)
@@ -426,14 +430,14 @@ private fun FormatChipsSection() {
             )
             FilterChip(
                 selected = selectedFormat == "Markdown",
-                onClick = { selectedFormat = if (selectedFormat == "Markdown") null else "Markdown" },
+                onClick = { onFormatSelected(if (selectedFormat == "Markdown") "" else "Markdown") },
                 label = { Text("Markdown") },
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = Outline.copy(alpha = 0.3f)
                 )
             )
         }
-        if (selectedFormat != null) {
+        if (selectedFormat.isNotEmpty()) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "已选择格式: $selectedFormat",

@@ -8,11 +8,10 @@ import com.xxmemory.app.domain.NotificationScheduler
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
-            val app = context.applicationContext as XxMemoryApplication
-            if (app.settingsManager.dailyReminder) {
-                NotificationScheduler.scheduleDailyReminder(context)
-            }
+        if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
+        val app = context.applicationContext as? XxMemoryApplication ?: return
+        if (app.settingsManager.dailyReminder) {
+            NotificationScheduler.scheduleDailyReminder(context)
         }
     }
 }
