@@ -11,7 +11,7 @@ import com.xxmemory.app.data.entity.ReviewLog
 
 @Database(
     entities = [Card::class, ReviewLog::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

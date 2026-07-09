@@ -46,5 +46,11 @@ data class Card(
     val audioUrl: String? = null,
 
     @ColumnInfo(name = "image_url")
-    val imageUrl: String? = null
+    val imageUrl: String? = null,
+
+    @ColumnInfo(name = "tags")
+    val tags: String = "",
+
+    @ColumnInfo(name = "is_favorite")
+    val isFavorite: Boolean = false
 )

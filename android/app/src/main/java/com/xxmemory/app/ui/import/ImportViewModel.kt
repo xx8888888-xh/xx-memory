@@ -177,7 +177,9 @@ class ImportViewModel : ViewModel() {
             answer = map["answer"] as? String ?: "",
             detail = map["detail"] as? String ?: "",
             subject = map["subject"] as? String ?: "",
-            cardType = map["cardType"] as? String ?: "qa"
+            cardType = map["cardType"] as? String ?: "qa",
+            tags = map["tags"] as? String ?: "",
+            isFavorite = map["isFavorite"] as? Boolean ?: (map["is_favorite"] as? Boolean ?: false)
         )
     }
 

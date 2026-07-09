@@ -55,4 +55,16 @@ interface CardDao {
 
     @Query("DELETE FROM cards WHERE id = :id")
     suspend fun deleteCard(id: Long)
+
+    @Query("SELECT * FROM cards WHERE is_favorite = 1 ORDER BY created_at DESC")
+    fun getFavoriteCards(): Flow<List<Card>>
+
+    @Query("SELECT * FROM cards WHERE tags LIKE '%' || :tag || '%' ORDER BY created_at DESC")
+    fun getCardsByTag(tag: String): Flow<List<Card>>
+
+    @Query("SELECT tags FROM cards WHERE tags != ''")
+    fun getAllTags(): Flow<List<String>>
+
+    @Query("UPDATE cards SET is_favorite = NOT is_favorite WHERE id = :cardId")
+    suspend fun toggleFavorite(cardId: Long)
 }

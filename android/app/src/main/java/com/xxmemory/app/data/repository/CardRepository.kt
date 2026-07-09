@@ -5,6 +5,7 @@ import com.xxmemory.app.data.dao.ReviewLogDao
 import com.xxmemory.app.data.entity.Card
 import com.xxmemory.app.data.entity.ReviewLog
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.util.Calendar
 
 class CardRepository(
@@ -65,6 +66,20 @@ class CardRepository(
         reviewLogDao.getCountAfter(afterDate)
 
     suspend fun deleteCard(id: Long) = cardDao.deleteCard(id)
+
+    fun getFavoriteCards(): Flow<List<Card>> = cardDao.getFavoriteCards()
+
+    fun getCardsByTag(tag: String): Flow<List<Card>> = cardDao.getCardsByTag(tag)
+
+    fun getAllTags(): Flow<List<String>> = cardDao.getAllTags().map { tagsList ->
+        tagsList
+            .flatMap { it.split(",").map { tag -> tag.trim() } }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+    }
+
+    suspend fun toggleFavorite(cardId: Long) = cardDao.toggleFavorite(cardId)
 
     companion object {
         fun getStartOfDay(timestamp: Long): Long {
