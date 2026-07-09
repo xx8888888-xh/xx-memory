@@ -27,6 +27,12 @@ abstract class AppDatabase : RoomDatabase() {
 
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
+                // Cards v2 added type, media URLs, tags and favorite support.
+                db.execSQL("ALTER TABLE cards ADD COLUMN card_type TEXT NOT NULL DEFAULT 'qa'")
+                db.execSQL("ALTER TABLE cards ADD COLUMN audio_url TEXT")
+                db.execSQL("ALTER TABLE cards ADD COLUMN image_url TEXT")
+                db.execSQL("ALTER TABLE cards ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE cards ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0")
                 // ReviewLog entity defines both card_id and review_date indices.
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_card_id ON review_logs(card_id)")
                 db.execSQL("CREATE INDEX IF NOT EXISTS index_review_date ON review_logs(review_date)")

@@ -53,14 +53,8 @@ class CardRepository(
     suspend fun getWeekCount(startOfWeek: Long, endOfWeek: Long): Int =
         reviewLogDao.getWeekCount(startOfWeek, endOfWeek)
 
-    suspend fun getDailyReviewDates(startOfWeek: Long, endOfWeek: Long): List<Long> =
-        reviewLogDao.getDailyReviewDates(startOfWeek, endOfWeek)
-
     suspend fun getCountForDay(dayStart: Long, dayEnd: Long): Int =
         reviewLogDao.getCountForDay(dayStart, dayEnd)
-
-    suspend fun getStudyDaysInWeek(startOfWeek: Long, endOfWeek: Long): Int =
-        reviewLogDao.getStudyDaysInWeek(startOfWeek, endOfWeek)
 
     suspend fun getCountAfter(afterDate: Long): Int =
         reviewLogDao.getCountAfter(afterDate)
@@ -99,6 +93,17 @@ class CardRepository(
             cal.set(Calendar.MINUTE, 59)
             cal.set(Calendar.SECOND, 59)
             cal.set(Calendar.MILLISECOND, 999)
+            return cal.timeInMillis
+        }
+
+        fun getNextDayStart(timestamp: Long): Long {
+            val cal = Calendar.getInstance()
+            cal.timeInMillis = timestamp
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+            cal.set(Calendar.HOUR_OF_DAY, 0)
+            cal.set(Calendar.MINUTE, 0)
+            cal.set(Calendar.SECOND, 0)
+            cal.set(Calendar.MILLISECOND, 0)
             return cal.timeInMillis
         }
 

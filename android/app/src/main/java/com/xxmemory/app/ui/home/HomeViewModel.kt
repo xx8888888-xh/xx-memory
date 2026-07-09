@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import android.util.Log
 
 data class HomeUiState(
     val dueCards: List<Card> = emptyList(),
@@ -46,45 +47,53 @@ class HomeViewModel : ViewModel() {
     fun loadData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            val now = System.currentTimeMillis()
-            val startOfDay = CardRepository.getStartOfDay(now)
-            val endOfDay = CardRepository.getEndOfDay(now)
+            try {
+                val now = System.currentTimeMillis()
+                val startOfDay = CardRepository.getStartOfDay(now)
+                val endOfDay = CardRepository.getEndOfDay(now)
 
-            val dueCards = repository.getDueCardsList(startOfDay)
-            val totalCards = repository.getTotalCardsSync()
-            val todayReviewed = repository.getTodayReviewCount(startOfDay, endOfDay)
-            val subjects = repository.getSubjects().first()
+                val dueCards = repository.getDueCardsList(startOfDay)
+                val totalCards = repository.getTotalCardsSync()
+                val todayReviewed = repository.getTodayReviewCount(startOfDay, endOfDay)
+                val subjects = repository.getSubjects().first()
 
-            val weekStats = mutableListOf<DayStat>()
-            val dayNames = listOf("日", "一", "二", "三", "四", "五", "六")
+                val weekStats = mutableListOf<DayStat>()
+                val dayNames = listOf("日", "一", "二", "三", "四", "五", "六")
 
-            for (i in 6 downTo 0) {
-                val dayCal = Calendar.getInstance()
-                dayCal.timeInMillis = startOfDay
-                dayCal.add(Calendar.DAY_OF_YEAR, -i)
-                val dayStart = CardRepository.getStartOfDay(dayCal.timeInMillis)
-                val dayEnd = CardRepository.getEndOfDay(dayCal.timeInMillis)
-                val count = repository.getCountForDay(dayStart, dayEnd)
-                val dayOfWeek = dayCal.get(Calendar.DAY_OF_WEEK)
-                weekStats.add(
-                    DayStat(
-                        dayOfWeek = dayNames[dayOfWeek - 1],
-                        dayNum = dayCal.get(Calendar.DAY_OF_MONTH),
-                        count = count,
-                        isToday = i == 0
+                for (i in 6 downTo 0) {
+                    val dayCal = Calendar.getInstance()
+                    dayCal.timeInMillis = startOfDay
+                    dayCal.add(Calendar.DAY_OF_YEAR, -i)
+                    val dayStart = CardRepository.getStartOfDay(dayCal.timeInMillis)
+                    val dayEnd = CardRepository.getNextDayStart(dayCal.timeInMillis)
+                    val count = repository.getCountForDay(dayStart, dayEnd)
+                    val dayOfWeek = dayCal.get(Calendar.DAY_OF_WEEK)
+                    weekStats.add(
+                        DayStat(
+                            dayOfWeek = dayNames[dayOfWeek - 1],
+                            dayNum = dayCal.get(Calendar.DAY_OF_MONTH),
+                            count = count,
+                            isToday = i == 0
+                        )
                     )
-                )
-            }
+                }
 
-            _uiState.value = _uiState.value.copy(
-                dueCards = dueCards,
-                totalCards = totalCards,
-                dueCount = dueCards.size,
-                todayReviewed = todayReviewed,
-                subjects = subjects,
-                weekStats = weekStats,
-                isLoading = false
-            )
+                val settings = XxMemoryApplication.instance.settingsManager
+                val limit = settings.dailyCardLimit.coerceAtLeast(1)
+
+                _uiState.value = _uiState.value.copy(
+                    dueCards = dueCards,
+                    totalCards = totalCards,
+                    dueCount = dueCards.size.coerceAtMost(limit),
+                    todayReviewed = todayReviewed,
+                    subjects = subjects,
+                    weekStats = weekStats,
+                    isLoading = false
+                )
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "loadData failed", e)
+                _uiState.value = _uiState.value.copy(isLoading = false)
+            }
         }
     }
 

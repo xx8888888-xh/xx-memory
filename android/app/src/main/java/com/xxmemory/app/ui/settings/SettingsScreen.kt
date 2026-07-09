@@ -3,6 +3,7 @@ package com.xxmemory.app.ui.settings
 import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
+import com.xxmemory.app.BuildConfig
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +36,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Divider
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -117,11 +118,9 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
-                var sliderValue by remember { mutableFloatStateOf(uiState.dailyCardLimit.toFloat()) }
                 Slider(
-                    value = sliderValue,
-                    onValueChange = { sliderValue = it },
-                    onValueChangeFinished = { viewModel.setDailyCardLimit(sliderValue.toInt()) },
+                    value = uiState.dailyCardLimit.toFloat(),
+                    onValueChange = { viewModel.setDailyCardLimit(it.toInt()) },
                     valueRange = 5f..100f,
                     steps = 18,
                     colors = SliderDefaults.colors(
@@ -130,14 +129,14 @@ fun SettingsScreen(
                     )
                 )
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.Shuffle,
                 title = "随机顺序复习",
                 checked = uiState.shuffleCards,
                 onCheckedChange = { viewModel.toggleShuffle(it) }
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.Visibility,
                 title = "先显示详细说明",
@@ -202,7 +201,7 @@ fun SettingsScreen(
                 checked = uiState.einkMode,
                 onCheckedChange = { viewModel.toggleEinkMode(it) }
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.SpeakerNotes,
                 title = "自动朗读",
@@ -228,7 +227,7 @@ fun SettingsScreen(
                     }
                 }
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AccessTime,
                 title = "提醒时间",
@@ -245,9 +244,9 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Filled.Info,
                 title = "版本",
-                subtitle = "1.0.0"
+                subtitle = BuildConfig.VERSION_NAME
             )
-            HorizontalDivider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AutoAwesome,
                 title = "xx memory",
@@ -560,6 +559,7 @@ private fun SwitchItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

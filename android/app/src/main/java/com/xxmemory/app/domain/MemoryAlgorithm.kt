@@ -136,7 +136,7 @@ object EbbinghausFixedAlgorithm : MemoryAlgorithm {
     ): MemoryAlgorithm.ScheduleResult {
         val clampedQuality = quality.coerceIn(0, 3)
 
-        if (clampedQuality < 2) {
+        if (clampedQuality == 0) {
             return MemoryAlgorithm.ScheduleResult(
                 nextInterval = fixedIntervals[0],
                 nextEaseFactor = easeFactor,
@@ -169,7 +169,7 @@ object EbbinghausFixedAlgorithm : MemoryAlgorithm {
  * - Retrievability (R): Probability of recalling the item at time t, range [0, 1]
  *
  * Key formulas (FSRS v4):
- * - Retrievability: R(t, S) = exp(-t / S)
+ * - Retrievability: R(t, S) = (1 + t / (9S))^(-1)
  * - Interval: I = S * 9 * (1 / desiredRetention - 1)
  * - Initial stability: S0(G) = w[G-1] for G in {1,2,3,4}
  * - Initial difficulty: D0(G) = w[4] + w[5] * (G - 3)
@@ -258,7 +258,8 @@ object FsrsAlgorithm : MemoryAlgorithm {
     }
 
     private fun retrievability(elapsedDays: Double, stability: Double): Double {
-        return exp(-elapsedDays / stability)
+        if (stability <= 0) return 0.0
+        return 1.0 / (1.0 + elapsedDays / (9.0 * stability))
     }
 
     private fun nextDifficulty(d: Double, grade: Int): Double {

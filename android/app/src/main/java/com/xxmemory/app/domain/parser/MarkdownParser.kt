@@ -35,6 +35,16 @@ class MarkdownParser : DocumentParser {
         var currentAnswer = StringBuilder()
         var currentSubject = ""
         var currentDetail = ""
+        var currentTags = ""
+        var currentCardType = Card.TYPE_QA
+        var currentImageUrl: String? = null
+        var currentAudioUrl: String? = null
+        var currentIsFavorite = false
+
+        fun parseValue(line: String, prefix: String): String {
+            val idx = line.indexOf(prefix, ignoreCase = true)
+            return if (idx >= 0) line.substring(idx + prefix.length).trim() else line.trim()
+        }
 
         fun flushCard() {
             val q = currentQuestion?.trim()
@@ -45,7 +55,12 @@ class MarkdownParser : DocumentParser {
                         question = q,
                         answer = a,
                         subject = currentSubject,
-                        detail = currentDetail
+                        detail = currentDetail,
+                        cardType = currentCardType,
+                        tags = currentTags,
+                        imageUrl = currentImageUrl?.takeIf { it.isNotBlank() },
+                        audioUrl = currentAudioUrl?.takeIf { it.isNotBlank() },
+                        isFavorite = currentIsFavorite
                     )
                 )
             }
@@ -53,6 +68,11 @@ class MarkdownParser : DocumentParser {
             currentAnswer = StringBuilder()
             currentSubject = ""
             currentDetail = ""
+            currentTags = ""
+            currentCardType = Card.TYPE_QA
+            currentImageUrl = null
+            currentAudioUrl = null
+            currentIsFavorite = false
         }
 
         for (line in lines) {
@@ -63,23 +83,48 @@ class MarkdownParser : DocumentParser {
                         trimmed.startsWith("### Q:", ignoreCase = true) ||
                         trimmed.startsWith("#### Q:", ignoreCase = true) -> {
                     flushCard()
-                    currentQuestion = trimmed.substringAfter("Q:", trimmed).trim()
+                    currentQuestion = parseValue(trimmed, "Q:")
                 }
                 trimmed.startsWith("# A:", ignoreCase = true) ||
                         trimmed.startsWith("## A:", ignoreCase = true) ||
                         trimmed.startsWith("### A:", ignoreCase = true) ||
                         trimmed.startsWith("#### A:", ignoreCase = true) -> {
-                    currentAnswer.append(trimmed.substringAfter("A:", trimmed).trim()).append("\n")
+                    currentAnswer.append(parseValue(trimmed, "A:")).append("\n")
                 }
                 trimmed.startsWith("# Subject:", ignoreCase = true) ||
                         trimmed.startsWith("## Subject:", ignoreCase = true) ||
                         trimmed.startsWith("### Subject:", ignoreCase = true) -> {
-                    currentSubject = trimmed.substringAfter("Subject:", trimmed).trim()
+                    currentSubject = parseValue(trimmed, "Subject:")
                 }
                 trimmed.startsWith("# Detail:", ignoreCase = true) ||
                         trimmed.startsWith("## Detail:", ignoreCase = true) ||
                         trimmed.startsWith("### Detail:", ignoreCase = true) -> {
-                    currentDetail = trimmed.substringAfter("Detail:", trimmed).trim()
+                    currentDetail = parseValue(trimmed, "Detail:")
+                }
+                trimmed.startsWith("# Tags:", ignoreCase = true) ||
+                        trimmed.startsWith("## Tags:", ignoreCase = true) ||
+                        trimmed.startsWith("### Tags:", ignoreCase = true) -> {
+                    currentTags = parseValue(trimmed, "Tags:")
+                }
+                trimmed.startsWith("# CardType:", ignoreCase = true) ||
+                        trimmed.startsWith("## CardType:", ignoreCase = true) ||
+                        trimmed.startsWith("### CardType:", ignoreCase = true) -> {
+                    currentCardType = parseValue(trimmed, "CardType:").takeIf { it.isNotBlank() } ?: Card.TYPE_QA
+                }
+                trimmed.startsWith("# ImageUrl:", ignoreCase = true) ||
+                        trimmed.startsWith("## ImageUrl:", ignoreCase = true) ||
+                        trimmed.startsWith("### ImageUrl:", ignoreCase = true) -> {
+                    currentImageUrl = parseValue(trimmed, "ImageUrl:").takeIf { it.isNotBlank() }
+                }
+                trimmed.startsWith("# AudioUrl:", ignoreCase = true) ||
+                        trimmed.startsWith("## AudioUrl:", ignoreCase = true) ||
+                        trimmed.startsWith("### AudioUrl:", ignoreCase = true) -> {
+                    currentAudioUrl = parseValue(trimmed, "AudioUrl:").takeIf { it.isNotBlank() }
+                }
+                trimmed.startsWith("# IsFavorite:", ignoreCase = true) ||
+                        trimmed.startsWith("## IsFavorite:", ignoreCase = true) ||
+                        trimmed.startsWith("### IsFavorite:", ignoreCase = true) -> {
+                    currentIsFavorite = parseValue(trimmed, "IsFavorite:").lowercase() in setOf("true", "1", "yes")
                 }
                 currentQuestion != null -> {
                     currentAnswer.append(trimmed).append("\n")

@@ -99,6 +99,14 @@ fun ImportScreen(
             )
             Spacer(modifier = Modifier.height(20.dp))
 
+            if (uiState.isImporting) {
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             // File picker section
             FileImportSection(viewModel = viewModel)
             Spacer(modifier = Modifier.height(16.dp))
@@ -181,8 +189,17 @@ fun ImportScreen(
     if (showManualDialog) {
         ManualCardDialog(
             onDismiss = { showManualDialog = false },
-            onConfirm = { q, a, s, d, t, img, aud ->
-                viewModel.importManualCard(q, a, s, d, t, img, aud)
+            onConfirm = { q, a, s, d, tags, type, img, aud ->
+                viewModel.importManualCard(
+                    question = q,
+                    answer = a,
+                    subject = s,
+                    detail = d,
+                    cardType = type,
+                    tags = tags,
+                    imageUrl = img,
+                    audioUrl = aud
+                )
                 showManualDialog = false
             }
         )
@@ -491,7 +508,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
 @Composable
 private fun ManualCardDialog(
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String, String, String, String, String) -> Unit
 ) {
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
@@ -508,7 +525,8 @@ private fun ManualCardDialog(
             Text("手动添加卡片", fontWeight = FontWeight.Bold)
         },
         text = {
-            Column {
+            val scrollState = rememberScrollState()
+            Column(modifier = Modifier.verticalScroll(scrollState)) {
                 OutlinedTextField(
                     value = question,
                     onValueChange = { question = it },
@@ -603,7 +621,7 @@ private fun ManualCardDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(question, answer, subject, detail, tags, imageUrl, audioUrl) },
+                onClick = { onConfirm(question, answer, subject, detail, tags, selectedType, imageUrl, audioUrl) },
                 enabled = question.isNotBlank() && answer.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {

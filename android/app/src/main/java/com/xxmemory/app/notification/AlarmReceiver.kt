@@ -15,10 +15,14 @@ class AlarmReceiver : BroadcastReceiver() {
         val wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "xxmemory:alarm")
         wakeLock.acquire(10_000)
         try {
-            runBlocking {
-                Scheduler.scheduleReviewReminder(context)
+            try {
+                runBlocking {
+                    Scheduler.scheduleReviewReminder(context)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            // This is a one-shot exact alarm; schedule the next occurrence for tomorrow.
+            // Always schedule the next occurrence so the daily chain is not broken.
             NotificationScheduler.scheduleDailyReminder(context)
         } finally {
             if (wakeLock.isHeld) wakeLock.release()

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,6 +30,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -54,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.xxmemory.app.data.entity.Card as CardEntity
+import com.xxmemory.app.ui.theme.rememberEinkMode
 import java.util.Locale
 
 @Composable
@@ -63,7 +66,7 @@ fun ReviewScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val settings = remember { com.xxmemory.app.XxMemoryApplication.instance.settingsManager }
-    val isEinkMode = settings.einkMode
+    val isEinkMode = rememberEinkMode()
 
     var ttsReady by remember { mutableStateOf(false) }
     val tts = remember {
@@ -72,14 +75,21 @@ fun ReviewScreen(
         }
     }
     DisposableEffect(tts) {
-        tts.language = Locale.CHINESE
+        val result = tts.setLanguage(Locale.getDefault())
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            tts.language = Locale.CHINESE
+        }
         onDispose {
             tts.stop()
             tts.shutdown()
         }
     }
 
-    val mediaPlayer = remember { MediaPlayer() }
+    val mediaPlayer = remember {
+        MediaPlayer().apply {
+            setOnPreparedListener { start() }
+        }
+    }
     DisposableEffect(mediaPlayer) {
         onDispose {
             mediaPlayer.release()

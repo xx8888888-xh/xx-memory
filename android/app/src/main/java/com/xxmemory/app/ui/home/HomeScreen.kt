@@ -44,8 +44,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.data.entity.Card
+import com.xxmemory.app.ui.theme.rememberEinkMode
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -57,7 +57,25 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isEinkMode = remember { XxMemoryApplication.instance.settingsManager.einkMode }
+    val isEinkMode = rememberEinkMode()
+
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isEinkMode) {
+                Text(
+                    text = "加载中...",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            } else {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        }
+        return
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -86,7 +104,6 @@ fun HomeScreen(
         // Progress ring area
         item {
             ProgressSection(
-                totalCards = uiState.totalCards,
                 todayReviewed = uiState.todayReviewed,
                 dueCount = uiState.dueCount,
                 isEinkMode = isEinkMode
@@ -309,7 +326,7 @@ private fun StartReviewButton(dueCount: Int, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int, isEinkMode: Boolean) {
+private fun ProgressSection(todayReviewed: Int, dueCount: Int, isEinkMode: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -367,7 +384,7 @@ private fun ProgressSection(totalCards: Int, todayReviewed: Int, dueCount: Int, 
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "已复习 $todayReviewed / $totalCards 张",
+                    text = "已复习 $todayReviewed / ${todayReviewed + dueCount} 张",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

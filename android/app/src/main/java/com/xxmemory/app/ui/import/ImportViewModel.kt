@@ -56,11 +56,15 @@ class ImportViewModel : ViewModel() {
         recentImportsJob?.cancel()
         recentImportsJob = viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            repository.getAllCards().collect { cards ->
-                _uiState.value = _uiState.value.copy(
-                    recentImports = cards.take(10),
-                    isLoading = false
-                )
+            try {
+                repository.getAllCards().collect { cards ->
+                    _uiState.value = _uiState.value.copy(
+                        recentImports = cards.take(10),
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
     }

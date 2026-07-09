@@ -26,6 +26,18 @@ class TxtParser : DocumentParser {
         val cards = mutableListOf<Card>()
         var currentQuestion: String? = null
         var currentAnswer = StringBuilder()
+        var currentSubject = ""
+        var currentDetail = ""
+        var currentTags = ""
+        var currentCardType = Card.TYPE_QA
+        var currentImageUrl: String? = null
+        var currentAudioUrl: String? = null
+        var currentIsFavorite = false
+
+        fun parseValue(line: String, prefix: String): String {
+            val idx = line.indexOf(prefix, ignoreCase = true)
+            return if (idx >= 0) line.substring(idx + prefix.length).trim() else line.trim()
+        }
 
         fun flushCard() {
             val q = currentQuestion?.trim()
@@ -34,12 +46,26 @@ class TxtParser : DocumentParser {
                 cards.add(
                     Card(
                         question = q,
-                        answer = a
+                        answer = a,
+                        subject = currentSubject,
+                        detail = currentDetail,
+                        cardType = currentCardType,
+                        tags = currentTags,
+                        imageUrl = currentImageUrl?.takeIf { it.isNotBlank() },
+                        audioUrl = currentAudioUrl?.takeIf { it.isNotBlank() },
+                        isFavorite = currentIsFavorite
                     )
                 )
             }
             currentQuestion = null
             currentAnswer = StringBuilder()
+            currentSubject = ""
+            currentDetail = ""
+            currentTags = ""
+            currentCardType = Card.TYPE_QA
+            currentImageUrl = null
+            currentAudioUrl = null
+            currentIsFavorite = false
         }
 
         for (paragraph in paragraphs) {
@@ -52,13 +78,34 @@ class TxtParser : DocumentParser {
                 when {
                     trimmed.startsWith("Q:", ignoreCase = true) -> {
                         flushCard()
-                        currentQuestion = trimmed.substringAfter("Q:", trimmed).trim()
+                        currentQuestion = parseValue(trimmed, "Q:")
                         hasQMarker = true
                     }
                     trimmed.startsWith("A:", ignoreCase = true) -> {
                         if (currentAnswer.isNotEmpty()) currentAnswer.append("\n")
-                        currentAnswer.append(trimmed.substringAfter("A:", trimmed).trim())
+                        currentAnswer.append(parseValue(trimmed, "A:"))
                         hasAMarker = true
+                    }
+                    trimmed.startsWith("Subject:", ignoreCase = true) -> {
+                        currentSubject = parseValue(trimmed, "Subject:")
+                    }
+                    trimmed.startsWith("Detail:", ignoreCase = true) -> {
+                        currentDetail = parseValue(trimmed, "Detail:")
+                    }
+                    trimmed.startsWith("Tags:", ignoreCase = true) -> {
+                        currentTags = parseValue(trimmed, "Tags:")
+                    }
+                    trimmed.startsWith("CardType:", ignoreCase = true) -> {
+                        currentCardType = parseValue(trimmed, "CardType:").takeIf { it.isNotBlank() } ?: Card.TYPE_QA
+                    }
+                    trimmed.startsWith("ImageUrl:", ignoreCase = true) -> {
+                        currentImageUrl = parseValue(trimmed, "ImageUrl:").takeIf { it.isNotBlank() }
+                    }
+                    trimmed.startsWith("AudioUrl:", ignoreCase = true) -> {
+                        currentAudioUrl = parseValue(trimmed, "AudioUrl:").takeIf { it.isNotBlank() }
+                    }
+                    trimmed.startsWith("IsFavorite:", ignoreCase = true) -> {
+                        currentIsFavorite = parseValue(trimmed, "IsFavorite:").lowercase() in setOf("true", "1", "yes")
                     }
                     currentQuestion != null && hasAMarker -> {
                         currentAnswer.append("\n").append(trimmed)
@@ -75,8 +122,8 @@ class TxtParser : DocumentParser {
                 flushCard()
             } else if (hasQMarker && !hasAMarker) {
                 // Q without A in this paragraph; keep open for next paragraph
-            } else if (!hasQMarker && currentQuestion != null) {
-                // No Q marker but we have an open question; append as answer continuation
+            } else if (!hasQMarker && !hasAMarker && currentQuestion != null) {
+                // No Q/A marker but we have an open question; append as answer continuation
                 if (currentAnswer.isNotEmpty()) currentAnswer.append("\n")
                 currentAnswer.append(paragraph)
             }

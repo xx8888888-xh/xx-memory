@@ -1,5 +1,6 @@
 package com.xxmemory.app.ui.review
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xxmemory.app.XxMemoryApplication
@@ -46,35 +47,40 @@ class ReviewViewModel : ViewModel() {
     fun loadDueCards() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            val now = System.currentTimeMillis()
-            val startOfDay = CardRepository.getStartOfDay(now)
-            val cards = repository.getDueCardsList(startOfDay)
+            try {
+                val now = System.currentTimeMillis()
+                val startOfDay = CardRepository.getStartOfDay(now)
+                val cards = repository.getDueCardsList(startOfDay)
 
-            if (cards.isEmpty()) {
+                if (cards.isEmpty()) {
+                    _uiState.value = ReviewUiState(
+                        isLoading = false,
+                        isComplete = true
+                    )
+                    return@launch
+                }
+
+                // Apply daily card limit
+                val limit = settingsManager.dailyCardLimit.coerceAtLeast(1)
+                val limitedCards = cards.take(limit)
+
+                // Apply shuffle
+                val finalCards = if (settingsManager.shuffleCards) limitedCards.shuffled() else limitedCards
+
                 _uiState.value = ReviewUiState(
+                    cards = finalCards,
+                    currentIndex = 0,
+                    currentCard = finalCards.firstOrNull(),
+                    isFlipped = settingsManager.showDetailFirst,
+                    totalCount = finalCards.size,
+                    currentNumber = 1,
                     isLoading = false,
-                    isComplete = true
+                    progress = 1f / finalCards.size.coerceAtLeast(1)
                 )
-                return@launch
+            } catch (e: Exception) {
+                Log.e("ReviewViewModel", "loadDueCards failed", e)
+                _uiState.value = ReviewUiState(isLoading = false, isComplete = true)
             }
-
-            // Apply daily card limit
-            val limit = settingsManager.dailyCardLimit.coerceAtLeast(1)
-            val limitedCards = cards.take(limit)
-
-            // Apply shuffle
-            val finalCards = if (settingsManager.shuffleCards) limitedCards.shuffled() else limitedCards
-
-            _uiState.value = ReviewUiState(
-                cards = finalCards,
-                currentIndex = 0,
-                currentCard = finalCards.firstOrNull(),
-                isFlipped = settingsManager.showDetailFirst,
-                totalCount = finalCards.size,
-                currentNumber = 1,
-                isLoading = false,
-                progress = 1f / finalCards.size.coerceAtLeast(1)
-            )
         }
     }
 

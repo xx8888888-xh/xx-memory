@@ -51,7 +51,7 @@ class StatisticsViewModel : ViewModel() {
             withContext(Dispatchers.IO) {
                 val now = System.currentTimeMillis()
                 val startOfDay = CardRepository.getStartOfDay(now)
-                val endOfDay = CardRepository.getEndOfDay(now)
+                val endOfDay = CardRepository.getNextDayStart(now)
                 val startOfWeek = CardRepository.getStartOfWeek(now)
 
                 val totalCards = repository.getTotalCardsSync()
@@ -100,7 +100,7 @@ class StatisticsViewModel : ViewModel() {
         cal.timeInMillis = todayStart
         for (i in 0..365) {
             val dayStart = CardRepository.getStartOfDay(cal.timeInMillis)
-            val dayEnd = CardRepository.getEndOfDay(dayStart)
+            val dayEnd = CardRepository.getNextDayStart(dayStart)
             val count = repository.getCountForDay(dayStart, dayEnd)
             if (count > 0) {
                 streak++
