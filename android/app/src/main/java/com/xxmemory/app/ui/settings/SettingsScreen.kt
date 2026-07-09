@@ -60,13 +60,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.xxmemory.app.ui.theme.Background
-import com.xxmemory.app.ui.theme.Primary
-import com.xxmemory.app.ui.theme.PrimaryLight
-import com.xxmemory.app.ui.theme.Surface
-import com.xxmemory.app.ui.theme.TextPrimary
-import com.xxmemory.app.ui.theme.TextSecondary
-import com.xxmemory.app.ui.theme.TextTertiary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,7 +75,7 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
@@ -112,7 +105,7 @@ fun SettingsScreen(
                 subtitle = uiState.userName,
                 onClick = { showProfileDialog = true }
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.Cloud,
                 title = "数据同步",
@@ -122,8 +115,8 @@ fun SettingsScreen(
                         checked = uiState.syncEnabled,
                         onCheckedChange = { viewModel.toggleSync(it) },
                         colors = SwitchDefaults.colors(
-                            checkedThumbColor = Primary,
-                            checkedTrackColor = PrimaryLight
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                         )
                     )
                 }
@@ -148,7 +141,7 @@ fun SettingsScreen(
                     Text(
                         text = "${uiState.dailyCardLimit} 张",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Primary,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -160,19 +153,19 @@ fun SettingsScreen(
                     valueRange = 5f..100f,
                     steps = 18,
                     colors = SliderDefaults.colors(
-                        thumbColor = Primary,
-                        activeTrackColor = Primary
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.Shuffle,
                 title = "随机顺序复习",
                 checked = uiState.shuffleCards,
                 onCheckedChange = { viewModel.toggleShuffle(it) }
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.Visibility,
                 title = "先显示详细说明",
@@ -202,7 +195,7 @@ fun SettingsScreen(
                         else -> ""
                     },
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
@@ -215,8 +208,8 @@ fun SettingsScreen(
                             onClick = { viewModel.setAlgorithmType(algo) },
                             label = { Text(algo, style = MaterialTheme.typography.labelSmall) },
                             colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Primary,
-                                selectedLabelColor = Surface
+                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                selectedLabelColor = MaterialTheme.colorScheme.surface
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -237,7 +230,7 @@ fun SettingsScreen(
                 checked = uiState.einkMode,
                 onCheckedChange = { viewModel.toggleEinkMode(it) }
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.SpeakerNotes,
                 title = "自动朗读",
@@ -263,7 +256,7 @@ fun SettingsScreen(
                     }
                 }
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AccessTime,
                 title = "提醒时间",
@@ -282,7 +275,7 @@ fun SettingsScreen(
                 title = "版本",
                 subtitle = "1.0.0"
             )
-            Divider(color = PrimaryLight.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AutoAwesome,
                 title = "xx memory",
@@ -341,13 +334,13 @@ private fun ProfileCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(Primary),
+                    .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = userName.take(1),
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Surface,
+                    color = MaterialTheme.colorScheme.surface,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -362,13 +355,13 @@ private fun ProfileCard(
                 Text(
                     text = userEmail,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = TextTertiary
+                tint = MaterialTheme.colorScheme.outline
             )
         }
     }
@@ -483,7 +476,7 @@ private fun SectionTitle(title: String) {
         text = title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
-        color = TextSecondary
+        color = MaterialTheme.colorScheme.onSurfaceVariant
     )
 }
 
@@ -516,7 +509,7 @@ private fun SettingsItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Primary,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -530,7 +523,7 @@ private fun SettingsItem(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -540,7 +533,7 @@ private fun SettingsItem(
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = TextTertiary,
+                tint = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -564,7 +557,7 @@ private fun SwitchItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Primary,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -578,7 +571,7 @@ private fun SwitchItem(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -586,8 +579,8 @@ private fun SwitchItem(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Primary,
-                checkedTrackColor = PrimaryLight
+                checkedThumbColor = MaterialTheme.colorScheme.primary,
+                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
             )
         )
     }

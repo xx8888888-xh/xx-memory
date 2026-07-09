@@ -53,15 +53,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.xxmemory.app.data.entity.Card as CardEntity
-import com.xxmemory.app.ui.theme.Background
-import com.xxmemory.app.ui.theme.Error
-import com.xxmemory.app.ui.theme.Primary
-import com.xxmemory.app.ui.theme.PrimaryLight
-import com.xxmemory.app.ui.theme.Success
-import com.xxmemory.app.ui.theme.Surface
-import com.xxmemory.app.ui.theme.TextPrimary
-import com.xxmemory.app.ui.theme.TextSecondary
-import com.xxmemory.app.ui.theme.Warning
 import java.util.Locale
 
 @Composable
@@ -106,7 +97,7 @@ fun ReviewScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator(color = Primary)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -119,7 +110,7 @@ fun ReviewScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background)
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         LinearProgressIndicator(
@@ -128,14 +119,14 @@ fun ReviewScreen(
                 .fillMaxWidth()
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp)),
-            color = Primary,
-            trackColor = PrimaryLight.copy(alpha = 0.3f)
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "${uiState.currentNumber} / ${uiState.totalCount}",
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -152,12 +143,12 @@ fun ReviewScreen(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Primary.copy(alpha = 0.1f))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                         .padding(horizontal = 16.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = card.subject,
-                        color = Primary,
+                        color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelMedium
                     )
                 }
@@ -170,7 +161,7 @@ fun ReviewScreen(
                     .weight(1f)
                     .clickable { viewModel.flipCard() },
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Surface),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Box(
@@ -187,13 +178,13 @@ fun ReviewScreen(
                             Text(
                                 text = "点击翻转",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = card.question,
                                 style = MaterialTheme.typography.headlineMedium,
-                                color = TextPrimary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center
                             )
@@ -201,7 +192,7 @@ fun ReviewScreen(
                             Text(
                                 text = card.question,
                                 style = MaterialTheme.typography.titleMedium,
-                                color = TextSecondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -209,7 +200,7 @@ fun ReviewScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(1.dp)
-                                    .background(PrimaryLight.copy(alpha = 0.5f))
+                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             CardContent(
@@ -221,7 +212,7 @@ fun ReviewScreen(
                                 Text(
                                     text = card.detail,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = TextSecondary,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center
                                 )
                             }
@@ -241,7 +232,7 @@ fun ReviewScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(PrimaryLight.copy(alpha = 0.2f))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
                             .clickable {
                                 val text = card.answer
                                 if (ttsReady) {
@@ -253,7 +244,7 @@ fun ReviewScreen(
                         Icon(
                             imageVector = Icons.Filled.SpeakerNotes,
                             contentDescription = "朗读",
-                            tint = Primary,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -265,7 +256,7 @@ fun ReviewScreen(
                 Text(
                     text = "你对这张卡片的掌握程度如何？",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -277,25 +268,25 @@ fun ReviewScreen(
                 ) {
                     AssessmentButton(
                         text = "忘记",
-                        color = Error,
+                        color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.assessCard(0) }
                     )
                     AssessmentButton(
                         text = "困难",
-                        color = Warning,
+                        color = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.assessCard(1) }
                     )
                     AssessmentButton(
                         text = "良好",
-                        color = Success,
+                        color = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.assessCard(2) }
                     )
                     AssessmentButton(
                         text = "简单",
-                        color = Primary,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
                         onClick = { viewModel.assessCard(3) }
                     )
@@ -319,7 +310,7 @@ private fun CardContent(
             Text(
                 text = card.answer.replace("___", "_________"),
                 style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -355,7 +346,7 @@ private fun CardContent(
                 Text(
                     text = "图片内容",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
@@ -367,7 +358,7 @@ private fun CardContent(
                 Text(
                     text = card.answer,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
@@ -384,7 +375,7 @@ private fun CardContent(
                                 android.util.Log.e("ReviewScreen", "播放音频失败: ${e.message}")
                             }
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(
                             imageVector = Icons.Filled.SpeakerNotes,
@@ -400,7 +391,7 @@ private fun CardContent(
             Text(
                 text = card.answer,
                 style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -437,33 +428,33 @@ private fun EmptyReviewState(onReload: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Background),
+            .background(MaterialTheme.colorScheme.background),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = Icons.Filled.CheckCircle,
             contentDescription = null,
-            tint = Success,
+            tint = MaterialTheme.colorScheme.tertiary,
             modifier = Modifier.size(80.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "没有待复习的卡片",
             style = MaterialTheme.typography.titleLarge,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.SemiBold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "去导入页面添加新的卡片吧",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = onReload,
-            colors = ButtonDefaults.buttonColors(containerColor = Primary)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
             Icon(Icons.Filled.Refresh, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
@@ -483,26 +474,26 @@ private fun ReviewCompleteState(completedCount: Int, onReload: () -> Unit) {
         Icon(
             imageVector = Icons.Filled.Star,
             contentDescription = null,
-            tint = Warning,
+            tint = MaterialTheme.colorScheme.secondary,
             modifier = Modifier.size(80.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
             text = "太棒了！",
             style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = "已完成 $completedCount 张卡片的复习",
             style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(24.dp))
         Button(
             onClick = onReload,
-            colors = ButtonDefaults.buttonColors(containerColor = Primary),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Filled.Refresh, contentDescription = null)

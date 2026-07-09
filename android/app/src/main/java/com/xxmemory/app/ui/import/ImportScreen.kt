@@ -66,17 +66,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.data.entity.Card
-import com.xxmemory.app.ui.theme.Background
-import com.xxmemory.app.ui.theme.Error
-import com.xxmemory.app.ui.theme.Info
-import com.xxmemory.app.ui.theme.Outline
-import com.xxmemory.app.ui.theme.Primary
-import com.xxmemory.app.ui.theme.PrimaryLight
-import com.xxmemory.app.ui.theme.Success
-import com.xxmemory.app.ui.theme.Surface
-import com.xxmemory.app.ui.theme.TextPrimary
-import com.xxmemory.app.ui.theme.TextSecondary
-import com.xxmemory.app.ui.theme.Warning
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -98,14 +87,14 @@ fun ImportScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Background)
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             Text(
                 text = "导入卡片",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(20.dp))
@@ -149,7 +138,7 @@ fun ImportScreen(
             Text(
                 text = "最近导入",
                 style = MaterialTheme.typography.titleMedium,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -157,7 +146,7 @@ fun ImportScreen(
             if (uiState.isLoading) {
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
-                    color = Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
@@ -170,7 +159,7 @@ fun ImportScreen(
                 ) {
                     Text(
                         text = "暂无导入记录",
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -216,7 +205,7 @@ private fun FileImportSection(viewModel: ImportViewModel) {
             .fillMaxWidth()
             .clickable { launcher.launch("*/*") },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -228,13 +217,13 @@ private fun FileImportSection(viewModel: ImportViewModel) {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(PrimaryLight.copy(alpha = 0.2f)),
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.FileUpload,
                     contentDescription = null,
-                    tint = Primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -244,12 +233,12 @@ private fun FileImportSection(viewModel: ImportViewModel) {
                     text = "从文件导入",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "支持 JSON, CSV, TXT, Markdown 格式",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -269,7 +258,7 @@ private fun UrlImportSection(
             .fillMaxWidth()
             .clickable { showUrlField = !showUrlField },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -277,13 +266,13 @@ private fun UrlImportSection(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Info.copy(alpha = 0.1f)),
+                        .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Link,
                         contentDescription = null,
-                        tint = Info,
+                        tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -293,12 +282,12 @@ private fun UrlImportSection(
                         text = "从 URL / JSON 导入",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "粘贴 JSON 数据或链接",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -316,7 +305,7 @@ private fun UrlImportSection(
                     onClick = { onImport(urlInput) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Text("导入")
                 }
@@ -327,14 +316,14 @@ private fun UrlImportSection(
 
 @Composable
 private fun AiSkillSection() {
-    var showAiInfo by remember { mutableStateOf(false) }
+    var showAiMaterialTheme.colorScheme.tertiary by remember { mutableStateOf(false) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { showAiInfo = true },
+            .clickable { showAiMaterialTheme.colorScheme.tertiary = true },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -346,13 +335,13 @@ private fun AiSkillSection() {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Success.copy(alpha = 0.1f)),
+                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.SmartToy,
                     contentDescription = null,
-                    tint = Success,
+                    tint = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -362,31 +351,31 @@ private fun AiSkillSection() {
                     text = "AI 智能导入",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "拍照识别、网页提取、语音转文字",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = TextSecondary
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 
-    if (showAiInfo) {
+    if (showAiMaterialTheme.colorScheme.tertiary) {
         AlertDialog(
-            onDismissRequest = { showAiInfo = false },
+            onDismissRequest = { showAiMaterialTheme.colorScheme.tertiary = false },
             title = { Text("AI 智能导入", fontWeight = FontWeight.Bold) },
             text = {
                 Text("AI 智能导入功能需要将 AI Skill 文件上传至 AI 助手（如 TRAE）使用。\n\n支持的导入方式：\n• 拍照识别文字内容\n• 网页内容提取\n• 语音转文字\n\nAI 将自动解析内容并生成记忆卡片。")
             },
             confirmButton = {
-                TextButton(onClick = { showAiInfo = false }) {
+                TextButton(onClick = { showAiMaterialTheme.colorScheme.tertiary = false }) {
                     Text("知道了")
                 }
             }
@@ -409,7 +398,7 @@ private fun FormatChipsSection(
                 onClick = { onFormatSelected(if (selectedFormat == "JSON") "" else "JSON") },
                 label = { Text("JSON") },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = Outline.copy(alpha = 0.3f)
+                    containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                 )
             )
             FilterChip(
@@ -417,7 +406,7 @@ private fun FormatChipsSection(
                 onClick = { onFormatSelected(if (selectedFormat == "CSV") "" else "CSV") },
                 label = { Text("CSV") },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = Outline.copy(alpha = 0.3f)
+                    containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                 )
             )
             FilterChip(
@@ -425,7 +414,7 @@ private fun FormatChipsSection(
                 onClick = { onFormatSelected(if (selectedFormat == "TXT") "" else "TXT") },
                 label = { Text("TXT") },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = Outline.copy(alpha = 0.3f)
+                    containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                 )
             )
             FilterChip(
@@ -433,7 +422,7 @@ private fun FormatChipsSection(
                 onClick = { onFormatSelected(if (selectedFormat == "Markdown") "" else "Markdown") },
                 label = { Text("Markdown") },
                 colors = FilterChipDefaults.filterChipColors(
-                    containerColor = Outline.copy(alpha = 0.3f)
+                    containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                 )
             )
         }
@@ -442,7 +431,7 @@ private fun FormatChipsSection(
             Text(
                 text = "已选择格式: $selectedFormat",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -453,7 +442,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -464,7 +453,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
             Icon(
                 imageVector = Icons.Filled.Description,
                 contentDescription = null,
-                tint = Primary,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -472,7 +461,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
                 Text(
                     text = card.question,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -480,7 +469,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
                     Text(
                         text = card.subject,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -490,7 +479,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = "删除",
-                    tint = Error.copy(alpha = 0.7f),
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -552,7 +541,7 @@ private fun ManualCardDialog(
                 Text(
                     text = "卡片类型",
                     style = MaterialTheme.typography.labelMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
@@ -595,7 +584,7 @@ private fun ManualCardDialog(
             Button(
                 onClick = { onConfirm(question, answer, subject, detail, selectedType) },
                 enabled = question.isNotBlank() && answer.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 Text("添加")
             }
