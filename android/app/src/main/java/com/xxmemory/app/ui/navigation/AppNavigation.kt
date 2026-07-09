@@ -35,8 +35,6 @@ import com.xxmemory.app.ui.import.ImportScreen
 import com.xxmemory.app.ui.review.ReviewScreen
 import com.xxmemory.app.ui.statistics.StatisticsScreen
 import com.xxmemory.app.ui.settings.SettingsScreen
-import com.xxmemory.app.ui.theme.Primary
-import com.xxmemory.app.ui.theme.TextSecondary
 
 sealed class Screen(
     val route: String,
@@ -124,10 +122,10 @@ private fun BottomNavBar(navController: NavHostController) {
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Primary,
-                    selectedTextColor = Primary,
-                    unselectedIconColor = TextSecondary,
-                    unselectedTextColor = TextSecondary
+                    selectedIconColor = MaterialTheme.colorScheme.onSurface,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
         }
