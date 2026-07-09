@@ -149,30 +149,36 @@ class ImportViewModel : ViewModel() {
             ).type
             val jsonArray: List<Map<String, Any>> = gson.fromJson(json, type)
             for (item in jsonArray) {
-                cards.add(
-                    Card(
-                        question = item["question"] as? String ?: "",
-                        answer = item["answer"] as? String ?: "",
-                        detail = item["detail"] as? String ?: "",
-                        subject = item["subject"] as? String ?: "",
-                        cardType = item["cardType"] as? String ?: "qa"
-                    )
-                )
+                cards.add(mapToCard(item))
             }
         } catch (e: Exception) {
-            // Try single object
-            val jsonObj = gson.fromJson(json, Map::class.java)
-            cards.add(
-                Card(
-                    question = jsonObj["question"] as? String ?: "",
-                    answer = jsonObj["answer"] as? String ?: "",
-                    detail = jsonObj["detail"] as? String ?: "",
-                    subject = jsonObj["subject"] as? String ?: "",
-                    cardType = jsonObj["cardType"] as? String ?: "qa"
-                )
-            )
+            try {
+                val jsonObj = gson.fromJson(json, Map::class.java)
+                if (jsonObj.containsKey("cards")) {
+                    val cardsArray = jsonObj["cards"] as? List<Map<String, Any>>
+                    if (cardsArray != null) {
+                        for (item in cardsArray) {
+                            cards.add(mapToCard(item))
+                        }
+                    }
+                } else {
+                    cards.add(mapToCard(jsonObj))
+                }
+            } catch (e2: Exception) {
+                throw e2
+            }
         }
         return cards
+    }
+
+    private fun mapToCard(map: Map<*, *>): Card {
+        return Card(
+            question = map["question"] as? String ?: "",
+            answer = map["answer"] as? String ?: "",
+            detail = map["detail"] as? String ?: "",
+            subject = map["subject"] as? String ?: "",
+            cardType = map["cardType"] as? String ?: "qa"
+        )
     }
 
     fun clearMessage() {
