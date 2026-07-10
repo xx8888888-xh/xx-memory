@@ -1,13 +1,17 @@
 {
   "skillName": "xx-memory-flashcard-generator",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "targetApp": "xx memory (通用智能记忆助手) Android App",
-  "purpose": "Enable any AI agent to generate flashcard files in formats the xx memory app can import. The AI reads this skill definition, then produces ready-to-import files (JSON, CSV, TXT, or Markdown) containing well-structured memory cards following the app's schema and quality standards.",
+  "purpose": "Enable any AI agent to generate flashcard files and AI-enriched review content for the xx memory app. The AI reads this skill definition, then produces ready-to-import files (JSON, CSV, TXT, or Markdown) containing well-structured memory cards, or generates distractor options, cloze fill-in-the-blank questions, example sentences, hints, rhymes, derivatives and audio scripts based on existing cards.",
   "whenToUse": [
     "A user asks the AI to create flashcards / memory cards / 记忆卡片 for the xx memory app.",
     "A user asks to convert their notes, textbook content, code snippets, or study material into importable flashcard files.",
     "A user explicitly mentions any of the supported import formats (JSON / CSV / TXT / Markdown) for xx memory.",
-    "A user references 'xx memory', '通用智能记忆助手', or asks for cards compatible with this app's import flow."
+    "A user references 'xx memory', '通用智能记忆助手', or asks for cards compatible with this app's import flow.",
+    "A user asks the AI to generate 4-option choices / 选项 / distractors for an existing card.",
+    "A user asks the AI to generate fill-in-the-blank / 挖词填空 / cloze cards from existing content.",
+    "A user asks the AI to generate example sentences / 例句, hints / 提示, rhymes / 押韵词, derivatives / 派生词, or etymology / 词根词缀 for a card.",
+    "A user asks the AI to generate audio narration scripts / 朗读稿 for poems, ancient texts, or any memorization material."
   ],
   "supportedCardTypes": {
     "qa": {
@@ -18,9 +22,16 @@
     },
     "fill_blank": {
       "name": "填空 (Fill in the Blank)",
-      "description": "A cloze-style card. Put the blank token (e.g. ___) inside the question and supply the missing text in answer.",
+      "description": "A cloze-style card. Put the blank token (e.g. ___) inside the question and supply the missing text in answer. The app will render the blank and let the learner type or speak the answer.",
       "requiredFields": ["question", "answer"],
       "example": { "cardType": "fill_blank", "question": "The powerhouse of the cell is the ___.", "answer": "mitochondria" }
+    },
+    "dictation": {
+      "name": "默写 (Dictation / Recitation)",
+      "description": "The learner sees/hears the prompt and must reproduce the full text. audioUrl is strongly recommended so the app can play the correct recitation while the learner practices. question is the title/prompt, answer is the full text.",
+      "requiredFields": ["question", "answer"],
+      "recommendedFields": ["audioUrl"],
+      "example": { "cardType": "dictation", "question": "静夜思", "answer": "床前明月光，疑是地上霜。举头望明月，低头思故乡。", "audioUrl": "https://example.com/jingyesi.mp3" }
     },
     "code": {
       "name": "代码 (Code)",
@@ -36,7 +47,7 @@
     },
     "audio": {
       "name": "音频 (Audio)",
-      "description": "Audio recall card. audioUrl is required. question is the prompt, answer is what the learner should recognize or recall after listening.",
+      "description": "Audio recall card. audioUrl is required. question is the prompt, answer is what the learner should recognize or recall after listening. For poems or texts, cardType 'dictation' is preferred so the app can play audio while the learner writes the answer.",
       "requiredFields": ["question", "answer", "audioUrl"],
       "example": { "cardType": "audio", "question": "Which bird produces this call?", "answer": "Common Cuckoo", "audioUrl": "https://example.com/cuckoo.mp3" }
     }
@@ -56,7 +67,7 @@
       "type": "string",
       "required": false,
       "default": "未分类",
-      "description": "Category / subject grouping (e.g. Biology, JavaScript, Spanish). Cards with the same subject are grouped together in the app."
+      "description": "Category / subject grouping (e.g. Biology, JavaScript, Spanish, 古诗词). Cards with the same subject are grouped together in the app."
     },
     "detail": {
       "type": "string",
@@ -67,7 +78,7 @@
     "cardType": {
       "type": "string",
       "required": true,
-      "enum": ["qa", "fill_blank", "code", "image", "audio"],
+      "enum": ["qa", "fill_blank", "dictation", "code", "image", "audio"],
       "default": "qa",
       "description": "Determines how the card is rendered and reviewed. Must be one of the supported card types."
     },
@@ -87,13 +98,55 @@
       "type": "string",
       "required": false,
       "default": "",
-      "description": "URL or local path to an audio file. Required when cardType=audio, otherwise empty."
+      "description": "URL or local path to an audio file. Required when cardType=audio, strongly recommended when cardType=dictation."
     },
     "isFavorite": {
       "type": "boolean",
       "required": false,
       "default": false,
       "description": "Whether the card is marked as favorite / starred in the app."
+    },
+    "phonetic": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Phonetic transcription for word cards (e.g. /ˈpærɪs/)."
+    },
+    "example": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "An example sentence or real context showing the answer in use."
+    },
+    "collocations": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Common collocations or exam points for word cards."
+    },
+    "etymology": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Etymology / word roots / affixes for word cards."
+    },
+    "hint": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "A hint to help the learner recall the answer."
+    },
+    "rhyme": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Rhyming or association words for word cards."
+    },
+    "derivatives": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Derivative words or word family for word cards."
     }
   },
   "outputFormats": {
@@ -132,36 +185,14 @@
           "isFavorite": true
         },
         {
-          "question": "Write a function to check if a number is even in Python.",
-          "answer": "def is_even(n):\n    return n % 2 == 0",
-          "subject": "Python",
-          "detail": "Uses the modulo operator.",
-          "cardType": "code",
-          "tags": "functions,basics",
+          "question": "静夜思",
+          "answer": "床前明月光，疑是地上霜。举头望明月，低头思故乡。",
+          "subject": "古诗词",
+          "detail": "李白《静夜思》",
+          "cardType": "dictation",
+          "tags": "poem,tang,recitation",
           "imageUrl": "",
-          "audioUrl": "",
-          "isFavorite": false
-        },
-        {
-          "question": "What organelle is shown?",
-          "answer": "Mitochondria",
-          "subject": "Biology",
-          "detail": "",
-          "cardType": "image",
-          "tags": "cell,organelle",
-          "imageUrl": "https://example.com/mito.png",
-          "audioUrl": "",
-          "isFavorite": false
-        },
-        {
-          "question": "Which instrument plays this melody?",
-          "answer": "Violin",
-          "subject": "Music",
-          "detail": "",
-          "cardType": "audio",
-          "tags": "strings,listening",
-          "imageUrl": "",
-          "audioUrl": "https://example.com/violin.mp3",
+          "audioUrl": "https://example.com/jingyesi.mp3",
           "isFavorite": false
         }
       ]
@@ -170,7 +201,7 @@
       "description": "Comma-separated values with a header row. Useful for spreadsheet workflows.",
       "mimeType": "text/csv",
       "rules": [
-        "First line MUST be the header row with these exact columns in order: question,answer,subject,detail,cardType,tags,imageUrl,audioUrl,isFavorite",
+        "First line MUST be the header row with these exact columns in order: question,answer,subject,detail,cardType,tags,imageUrl,audioUrl,isFavorite,phonetic,example,collocations,etymology,hint,rhyme,derivatives",
         "Every subsequent line is one card.",
         "Fields containing commas, double quotes, or newlines MUST be wrapped in double quotes.",
         "Inside quoted fields, escape double quotes by doubling them (\"\").",
@@ -178,8 +209,7 @@
         "isFavorite values must be true or false (lowercase).",
         "Use UTF-8 encoding."
       ],
-      "headerRow": "question,answer,subject,detail,cardType,tags,imageUrl,audioUrl,isFavorite",
-      "example": "question,answer,subject,detail,cardType,tags,imageUrl,audioUrl,isFavorite\n\"What is the time complexity of binary search?\",\"O(log n)\",Algorithms,\"Halves the search space each step.\",qa,\"complexity,search,basics\",,,false\n\"Complete: The keyword to define a constant in JavaScript is ___.\",const,JavaScript,,fill_blank,syntax,es6,,true\n\"Write a function to check if a number is even in Python.\",\"def is_even(n):\\n    return n % 2 == 0\",Python,\"Uses the modulo operator.\",code,\"functions,basics\",,,false\n\"What organelle is shown?\",Mitochondria,Biology,,image,\"cell,organelle\",https://example.com/mito.png,,false\n\"Which instrument plays this melody?\",Violin,Music,,audio,strings,listening,,https://example.com/violin.mp3,false"
+      "headerRow": "question,answer,subject,detail,cardType,tags,imageUrl,audioUrl,isFavorite,phonetic,example,collocations,etymology,hint,rhyme,derivatives"
     },
     "txt": {
       "description": "Plain-text marker format. One card per block, blocks separated by a blank line. Human-friendly and diff-friendly.",
@@ -188,8 +218,8 @@
         "Each card is a block of lines; separate cards with a single blank line.",
         "The block MUST start with a Q: line containing the question.",
         "The block MUST contain an A: line containing the answer.",
-        "Optional metadata lines (any order, after Q:/A:) begin with one of: Subject:, Detail:, CardType:, Tags:, ImageUrl:, AudioUrl:, Favorite:.",
-        "CardType defaults to qa if omitted. Allowed values: qa, fill_blank, code, image, audio.",
+        "Optional metadata lines (any order, after Q:/A:) begin with one of: Subject:, Detail:, CardType:, Tags:, ImageUrl:, AudioUrl:, Favorite:, Phonetic:, Example:, Collocations:, Etymology:, Hint:, Rhyme:, Derivatives:.",
+        "CardType defaults to qa if omitted. Allowed values: qa, fill_blank, dictation, code, image, audio.",
         "Favorite: line accepts true or false (case-insensitive); defaults to false.",
         "Tags: is a comma-separated list on a single line.",
         "For multi-line code answers, indent continuation lines with 4 spaces, or wrap the entire answer following A: on subsequent indented lines.",
@@ -203,10 +233,16 @@
         "CardType:": "cardType (optional, default qa)",
         "Tags:": "tags (optional, comma-separated)",
         "ImageUrl:": "imageUrl (optional, required for image cards)",
-        "AudioUrl:": "audioUrl (optional, required for audio cards)",
-        "Favorite:": "isFavorite (optional, default false)"
-      },
-      "example": "Q: What is the time complexity of binary search?\nA: O(log n)\nSubject: Algorithms\nDetail: Halves the search space each step.\nCardType: qa\nTags: complexity,search,basics\nFavorite: false\n\nQ: Complete: The keyword to define a constant in JavaScript is ___.\nA: const\nSubject: JavaScript\nCardType: fill_blank\nTags: syntax,es6\nFavorite: true\n\nQ: Write a function to check if a number is even in Python.\nA: def is_even(n):\n    return n % 2 == 0\nSubject: Python\nDetail: Uses the modulo operator.\nCardType: code\nTags: functions,basics\n\nQ: What organelle is shown?\nA: Mitochondria\nSubject: Biology\nCardType: image\nTags: cell,organelle\nImageUrl: https://example.com/mito.png\n\nQ: Which instrument plays this melody?\nA: Violin\nSubject: Music\nCardType: audio\nTags: strings,listening\nAudioUrl: https://example.com/violin.mp3"
+        "AudioUrl:": "audioUrl (optional, required for audio cards, recommended for dictation)",
+        "Favorite:": "isFavorite (optional, default false)",
+        "Phonetic:": "phonetic (optional)",
+        "Example:": "example (optional)",
+        "Collocations:": "collocations (optional)",
+        "Etymology:": "etymology (optional)",
+        "Hint:": "hint (optional)",
+        "Rhyme:": "rhyme (optional)",
+        "Derivatives:": "derivatives (optional)"
+      }
     },
     "markdown": {
       "description": "Markdown format using headings to delimit cards and metadata lines for app-specific fields.",
@@ -215,14 +251,89 @@
         "Each card is a level-2 heading section starting with '## ' followed by the question text.",
         "Immediately under the heading, the answer MUST appear as a paragraph prefixed with '**Answer:** ' (or a line starting with 'Answer: ').",
         "Optional detail follows as a paragraph prefixed with '**Detail:** '.",
-        "App metadata uses heading-comments / list lines beginning with '# Tags:', '# CardType:', '# Subject:', '# ImageUrl:', '# AudioUrl:', '# Favorite:'.",
-        "CardType defaults to qa. Allowed: qa, fill_blank, code, image, audio.",
+        "App metadata uses heading-comments / list lines beginning with '# Tags:', '# CardType:', '# Subject:', '# ImageUrl:', '# AudioUrl:', '# Favorite:', '# Phonetic:', '# Example:', '# Collocations:', '# Etymology:', '# Hint:', '# Rhyme:', '# Derivatives:'.",
+        "CardType defaults to qa. Allowed: qa, fill_blank, dictation, code, image, audio.",
         "Favorite accepts true / false; defaults to false.",
         "Code answers SHOULD use a fenced code block (```), preserving indentation.",
         "Separate cards with a horizontal rule (---) or a blank line plus the next '## ' heading.",
         "Use UTF-8 encoding."
+      ]
+    }
+  },
+  "generationCapabilities": {
+    "distractorOptions": {
+      "name": "四选一干扰项",
+      "description": "Given a target card (question + correct answer) and optionally a pool of other cards, generate exactly 3 plausible wrong answers plus the correct answer, then shuffle them. Output a JSON object with fields: targetQuestion, correctAnswer, options (array of 4 strings), correctIndex (0-3).",
+      "rules": [
+        "Wrong options must be semantically related to the correct answer but clearly incorrect.",
+        "Avoid options that are synonyms, subsets, or supersets of the correct answer.",
+        "If a distractor pool is provided, prefer pool answers that match the same subject/category.",
+        "Shuffle the final list so the correct answer appears at a random position.",
+        "If the correct answer is long (>30 chars), generate shorter paraphrases as wrong options."
       ],
-      "example": "## What is the time complexity of binary search?\n\n**Answer:** O(log n)\n\n**Detail:** Halves the search space each step.\n\n# Subject: Algorithms\n# CardType: qa\n# Tags: complexity,search,basics\n# Favorite: false\n\n---\n\n## Complete: The keyword to define a constant in JavaScript is ___.\n\n**Answer:** const\n\n# Subject: JavaScript\n# CardType: fill_blank\n# Tags: syntax,es6\n# Favorite: true\n\n---\n\n## Write a function to check if a number is even in Python.\n\n**Answer:**\n\n```python\ndef is_even(n):\n    return n % 2 == 0\n```\n\n**Detail:** Uses the modulo operator.\n\n# Subject: Python\n# CardType: code\n# Tags: functions,basics\n\n---\n\n## What organelle is shown?\n\n**Answer:** Mitochondria\n\n![card image](https://example.com/mito.png)\n\n# Subject: Biology\n# CardType: image\n# Tags: cell,organelle\n# ImageUrl: https://example.com/mito.png\n\n---\n\n## Which instrument plays this melody?\n\n**Answer:** Violin\n\n# Subject: Music\n# CardType: audio\n# Tags: strings,listening\n# AudioUrl: https://example.com/violin.mp3"
+      "exampleOutput": {
+        "targetQuestion": "What is the capital of France?",
+        "correctAnswer": "Paris",
+        "options": ["Berlin", "Paris", "Madrid", "Rome"],
+        "correctIndex": 1
+      }
+    },
+    "clozeFillBlank": {
+      "name": "挖词填空",
+      "description": "Given a sentence, paragraph, poem, or text, generate one or more fill-in-the-blank cards by replacing key words/phrases with '___'. Output a JSON array of {question (text with blank), answer (missing word/phrase), hint (optional context)}.",
+      "rules": [
+        "Choose blanks that test meaningful recall: nouns, verbs, key adjectives, dates, names, formulas, lines of poetry.",
+        "Do not blank out too many words in one card (max 1-3 blanks).",
+        "Ensure the answer is unambiguous from the surrounding context.",
+        "For poems, prefer blanking out one complete line or a couplet.",
+        "Preserve punctuation and formatting around the blank."
+      ],
+      "exampleOutput": [
+        {
+          "question": "The powerhouse of the cell is the ___.",
+          "answer": "mitochondria",
+          "hint": "Organelle that produces ATP."
+        },
+        {
+          "question": "床前___光，疑是地上霜。",
+          "answer": "明月",
+          "hint": "李白《静夜思》"
+        }
+      ]
+    },
+    "exampleSentence": {
+      "name": "例句生成",
+      "description": "Given a word/phrase/answer, generate a natural example sentence that demonstrates its usage. Output {word, sentence, translation (optional)}.",
+      "rules": [
+        "The sentence must clearly illustrate the meaning of the target word.",
+        "Avoid sentences where the target word is ambiguous.",
+        "For words with multiple meanings, prefer the meaning implied by the original card."
+      ]
+    },
+    "hint": {
+      "name": "提示生成",
+      "description": "Generate a short hint to help recall the answer without giving it away."
+    },
+    "rhyme": {
+      "name": "押韵/联想词",
+      "description": "Generate rhyming or association words for a given word."
+    },
+    "derivatives": {
+      "name": "派生词",
+      "description": "Generate derivatives, word family, or related forms for a given word."
+    },
+    "etymology": {
+      "name": "词根词缀/词源",
+      "description": "Generate etymology, word roots, and affix explanations for a given word."
+    },
+    "audioScript": {
+      "name": "朗读稿",
+      "description": "Given a poem, ancient text, or recitation material, generate a clean audio narration script and optionally suggest punctuation/timing for TTS or human recording. Output {title, fullText, audioScript}.",
+      "rules": [
+        "Preserve the original text exactly.",
+        "Add brief timing hints [pause] only where natural breaks occur.",
+        "Do not modernize classical Chinese unless requested."
+      ]
     }
   },
   "qualityGuidelines": {
@@ -232,20 +343,21 @@
     "selfContained": "Each card must be understandable in isolation, without relying on previous cards.",
     "answerSpecificity": "Answers should be specific and verifiable. Avoid 'it depends' style answers; if nuance is needed, put it in detail.",
     "codeCards": "Code must be syntactically valid for the stated language and preserve exact indentation/newlines. Include only the minimal code that answers the question.",
+    "dictationCards": "For poems and texts, use cardType 'dictation' and provide audioUrl when possible. The full text in answer must match the recitation exactly.",
     "tags": "Use 2–5 meaningful tags per card. Prefer lowercase, no spaces inside a tag (use hyphens if needed).",
     "subject": "Reuse consistent subject names across cards so they group cleanly in the app.",
     "noDuplicates": "Do not emit duplicate cards. Merge or discard near-duplicates before writing the file.",
     "avoidTriviaOnly": "Favor understanding and recall over rote trivia; prefer questions that probe concepts over isolated facts when possible."
   },
   "generationProcedure": [
-    "Identify the source material (notes, textbook, code, audio/image list) the user provides.",
+    "Identify the source material (notes, textbook, code, audio/image list, or existing cards) the user provides.",
     "Choose the target output format. If unspecified, default to JSON.",
     "Break the material into atomic concepts and decide a cardType for each.",
     "Draft question + answer pairs; put supporting context into detail, not into the question.",
     "Assign a consistent subject and 2–5 tags per card.",
-    "If cardType is image/audio, ensure imageUrl/audioUrl is present and resolvable.",
+    "If cardType is image/audio/dictation, ensure imageUrl/audioUrl is present and resolvable.",
     "Render the cards in the chosen format, following its rules exactly (see outputFormats).",
-    "Validate: every card has question, answer, cardType; every image card has imageUrl; every audio card has audioUrl; no duplicate Q/A pairs.",
+    "Validate: every card has question, answer, cardType; every image card has imageUrl; every audio card has audioUrl; every dictation card has audioUrl if audio is available; no duplicate Q/A pairs.",
     "Return the file content to the user (and, if writing to disk, save with the appropriate extension: .json / .csv / .txt / .md)."
   ],
   "fileExtensions": {
@@ -256,8 +368,8 @@
   },
   "validationChecklist": [
     "All required fields present (question, answer, cardType) on every card.",
-    "cardType is one of: qa, fill_blank, code, image, audio.",
-    "image cards have a non-empty imageUrl; audio cards have a non-empty audioUrl.",
+    "cardType is one of: qa, fill_blank, dictation, code, image, audio.",
+    "image cards have a non-empty imageUrl; audio cards have a non-empty audioUrl; dictation cards have audioUrl when audio is available.",
     "No duplicate questions within the file.",
     "Tags are comma-separated with no spaces inside individual tags (spaces around commas are tolerated).",
     "Encoding is UTF-8; no BOM.",
@@ -278,7 +390,8 @@
     "encoding": "UTF-8"
   },
   "notes": [
-    "This skill is format-only. It does not interact with the xx memory app's database or scheduling engine; the app imports these files through its own import flow.",
+    "This skill is format-only for flashcard files. It does not interact with the xx memory app's database or scheduling engine; the app imports these files through its own import flow.",
+    "AI-generated distractor options, cloze blanks, example sentences, hints, rhymes, derivatives, etymology and audio scripts are delivered as JSON content that the app can import as enriched card fields or render directly during review.",
     "When in doubt about field semantics, prefer the JSON format — it is lossless and unambiguous.",
     "If the user gives existing flashcards in one format and asks to convert to another, parse using the source format's rules then re-render using the target format's rules; do not change card content."
   ]

@@ -75,6 +75,15 @@ class CardRepository(
 
     suspend fun toggleFavorite(cardId: Long) = cardDao.toggleFavorite(cardId)
 
+    suspend fun getCardsForCalendar(start: Long, end: Long): List<Card> =
+        cardDao.getCardsForCalendar(start, end)
+
+    suspend fun getDueCountForDay(start: Long, end: Long): Int =
+        cardDao.getDueCountForDay(start, end)
+
+    suspend fun getDueCountBetween(start: Long, end: Long): Int =
+        cardDao.getDueCountBetween(start, end)
+
     companion object {
         fun getStartOfDay(timestamp: Long): Long {
             val cal = Calendar.getInstance()

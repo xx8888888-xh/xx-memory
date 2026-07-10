@@ -1,5 +1,6 @@
 package com.xxmemory.app.ui.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xxmemory.app.XxMemoryApplication
@@ -12,7 +13,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import android.util.Log
 
 data class HomeUiState(
     val dueCards: List<Card> = emptyList(),
@@ -21,15 +21,27 @@ data class HomeUiState(
     val todayReviewed: Int = 0,
     val subjects: List<String> = emptyList(),
     val selectedSubject: String? = null,
-    val weekStats: List<DayStat> = emptyList(),
+    val nextSevenDays: List<DayDueStat> = emptyList(),
+    val calendarMonthDays: List<CalendarDayStat> = emptyList(),
+    val selectedCalendarDay: Long? = null,
+    val selectedDayCards: List<Card> = emptyList(),
     val isLoading: Boolean = true
 )
 
-data class DayStat(
+data class DayDueStat(
     val dayOfWeek: String,
     val dayNum: Int,
-    val count: Int,
+    val dueCount: Int,
+    val timestamp: Long,
     val isToday: Boolean
+)
+
+data class CalendarDayStat(
+    val dayNum: Int,
+    val dueCount: Int,
+    val timestamp: Long,
+    val isToday: Boolean,
+    val isCurrentMonth: Boolean
 )
 
 class HomeViewModel : ViewModel() {
@@ -57,27 +69,6 @@ class HomeViewModel : ViewModel() {
                 val todayReviewed = repository.getTodayReviewCount(startOfDay, endOfDay)
                 val subjects = repository.getSubjects().first()
 
-                val weekStats = mutableListOf<DayStat>()
-                val dayNames = listOf("日", "一", "二", "三", "四", "五", "六")
-
-                for (i in 6 downTo 0) {
-                    val dayCal = Calendar.getInstance()
-                    dayCal.timeInMillis = startOfDay
-                    dayCal.add(Calendar.DAY_OF_YEAR, -i)
-                    val dayStart = CardRepository.getStartOfDay(dayCal.timeInMillis)
-                    val dayEnd = CardRepository.getNextDayStart(dayCal.timeInMillis)
-                    val count = repository.getCountForDay(dayStart, dayEnd)
-                    val dayOfWeek = dayCal.get(Calendar.DAY_OF_WEEK)
-                    weekStats.add(
-                        DayStat(
-                            dayOfWeek = dayNames[dayOfWeek - 1],
-                            dayNum = dayCal.get(Calendar.DAY_OF_MONTH),
-                            count = count,
-                            isToday = i == 0
-                        )
-                    )
-                }
-
                 val settings = XxMemoryApplication.instance.settingsManager
                 val limit = if (settings.dailyCardLimitEnabled) {
                     settings.dailyCardLimit.coerceAtLeast(1)
@@ -85,18 +76,109 @@ class HomeViewModel : ViewModel() {
                     Int.MAX_VALUE
                 }
 
+                val nextSevenDays = buildNextSevenDays(startOfDay)
+
                 _uiState.value = _uiState.value.copy(
                     dueCards = dueCards,
                     totalCards = totalCards,
                     dueCount = if (settings.dailyCardLimitEnabled) dueCards.size.coerceAtMost(limit) else dueCards.size,
                     todayReviewed = todayReviewed,
                     subjects = subjects,
-                    weekStats = weekStats,
+                    nextSevenDays = nextSevenDays,
                     isLoading = false
                 )
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "loadData failed", e)
                 _uiState.value = _uiState.value.copy(isLoading = false)
+            }
+        }
+    }
+
+    private suspend fun buildNextSevenDays(todayStart: Long): List<DayDueStat> {
+        val dayNames = listOf("日", "一", "二", "三", "四", "五", "六")
+        val result = mutableListOf<DayDueStat>()
+        for (i in 0..6) {
+            val cal = Calendar.getInstance()
+            cal.timeInMillis = todayStart
+            cal.add(Calendar.DAY_OF_YEAR, i)
+            val dayStart = CardRepository.getStartOfDay(cal.timeInMillis)
+            val dayEnd = CardRepository.getNextDayStart(cal.timeInMillis)
+            val count = repository.getDueCountBetween(dayStart, dayEnd)
+            result.add(
+                DayDueStat(
+                    dayOfWeek = dayNames[cal.get(Calendar.DAY_OF_WEEK) - 1],
+                    dayNum = cal.get(Calendar.DAY_OF_MONTH),
+                    dueCount = count,
+                    timestamp = dayStart,
+                    isToday = i == 0
+                )
+            )
+        }
+        return result
+    }
+
+    fun loadCalendarMonth() {
+        viewModelScope.launch {
+            try {
+                val now = System.currentTimeMillis()
+                val todayStart = CardRepository.getStartOfDay(now)
+                val cal = Calendar.getInstance().apply { timeInMillis = now }
+                cal.set(Calendar.DAY_OF_MONTH, 1)
+                cal.set(Calendar.HOUR_OF_DAY, 0)
+                cal.set(Calendar.MINUTE, 0)
+                cal.set(Calendar.SECOND, 0)
+                cal.set(Calendar.MILLISECOND, 0)
+                val currentMonth = cal.get(Calendar.MONTH)
+                val monthStart = cal.timeInMillis
+
+                val firstDayCal = cal.clone() as Calendar
+                firstDayCal.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY)
+                if (firstDayCal.timeInMillis > monthStart) {
+                    firstDayCal.add(Calendar.WEEK_OF_YEAR, -1)
+                }
+                val gridStart = CardRepository.getStartOfDay(firstDayCal.timeInMillis)
+
+                val days = mutableListOf<CalendarDayStat>()
+                val gridCal = Calendar.getInstance().apply { timeInMillis = gridStart }
+                repeat(42) {
+                    val dayStart = CardRepository.getStartOfDay(gridCal.timeInMillis)
+                    val dayEnd = CardRepository.getNextDayStart(gridCal.timeInMillis)
+                    val count = repository.getDueCountForDay(dayStart, dayEnd)
+                    days.add(
+                        CalendarDayStat(
+                            dayNum = gridCal.get(Calendar.DAY_OF_MONTH),
+                            dueCount = count,
+                            timestamp = dayStart,
+                            isToday = dayStart == todayStart,
+                            isCurrentMonth = gridCal.get(Calendar.MONTH) == currentMonth
+                        )
+                    )
+                    gridCal.add(Calendar.DAY_OF_YEAR, 1)
+                }
+
+                _uiState.value = _uiState.value.copy(calendarMonthDays = days)
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "loadCalendarMonth failed", e)
+            }
+        }
+    }
+
+    fun selectCalendarDay(dayStart: Long?) {
+        if (dayStart == null) {
+            _uiState.value = _uiState.value.copy(
+                selectedCalendarDay = null,
+                selectedDayCards = emptyList()
+            )
+            return
+        }
+        _uiState.value = _uiState.value.copy(selectedCalendarDay = dayStart)
+        viewModelScope.launch {
+            try {
+                val dayEnd = CardRepository.getNextDayStart(dayStart)
+                val cards = repository.getCardsForCalendar(dayStart, dayEnd)
+                _uiState.value = _uiState.value.copy(selectedDayCards = cards)
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "selectCalendarDay failed", e)
             }
         }
     }

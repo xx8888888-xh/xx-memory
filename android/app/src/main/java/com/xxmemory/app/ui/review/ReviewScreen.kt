@@ -81,6 +81,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.xxmemory.app.data.entity.Card as CardEntity
+import com.xxmemory.app.domain.AudioPlayer
 import com.xxmemory.app.ui.theme.EinkFilterChip
 import com.xxmemory.app.ui.theme.rememberEinkMode
 import java.util.Locale
@@ -103,7 +104,8 @@ fun ReviewScreen(
             ttsReady = status == TextToSpeech.SUCCESS
         }
     }
-    DisposableEffect(tts) {
+    val audioPlayer = remember { AudioPlayer(context) }
+    DisposableEffect(tts, audioPlayer) {
         val result = tts.setLanguage(Locale.getDefault())
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
             tts.language = Locale.CHINESE
@@ -111,14 +113,41 @@ fun ReviewScreen(
         onDispose {
             tts.stop()
             tts.shutdown()
+            audioPlayer.release()
         }
     }
 
-    // Auto-play TTS when the card answer is revealed and the setting is enabled.
+    // Auto-play audio when a card question appears or the answer is revealed.
     LaunchedEffect(uiState.step, uiState.currentCard?.id) {
-        if (settings.autoPlayAudio && ttsReady && uiState.step == ReviewStep.DETAIL) {
-            val text = uiState.currentCard?.answer?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
+        val card = uiState.currentCard ?: return@LaunchedEffect
+        when (uiState.step) {
+            ReviewStep.DETAIL -> {
+                if (settings.ttsAutoPlayAnswer) {
+                    audioPlayer.play(card.audioUrl, card.answer)
+                }
+            }
+            ReviewStep.QUESTION,
+            ReviewStep.RECALL,
+            ReviewStep.OPTIONS,
+            ReviewStep.EXAMPLE_REVIEW,
+            ReviewStep.INDEPENDENT_RECALL,
+            ReviewStep.SELF_ASSESSMENT,
+            ReviewStep.DICTATION,
+            ReviewStep.FILL_BLANK -> {
+                if (settings.ttsAutoPlayQuestion) {
+                    audioPlayer.play(card.audioUrl, card.question)
+                }
+            }
+            ReviewStep.SPELLING -> {}
+        }
+    }
+
+    // Auto-play answer audio when dictation / fill-blank result is revealed.
+    LaunchedEffect(uiState.dictationResult, uiState.fillBlankResult, uiState.currentCard?.id) {
+        if (!settings.ttsAutoPlayAnswer) return@LaunchedEffect
+        val card = uiState.currentCard ?: return@LaunchedEffect
+        if (uiState.dictationResult != null || uiState.fillBlankResult != null) {
+            audioPlayer.play(card.audioUrl, card.answer)
         }
     }
 
@@ -277,6 +306,19 @@ fun ReviewScreen(
                         onSelect = { viewModel.selectOption(it) }
                     )
 
+                    ReviewStep.EXAMPLE_REVIEW,
+                    ReviewStep.INDEPENDENT_RECALL,
+                    ReviewStep.SELF_ASSESSMENT -> BbdcLearningCard(
+                        card = card,
+                        step = uiState.step,
+                        isEinkMode = isEinkMode,
+                        tts = tts,
+                        ttsReady = ttsReady,
+                        onExampleClear = { viewModel.assessExampleReview(clear = true) },
+                        onExampleWrong = { viewModel.assessExampleReview(clear = false) },
+                        onSelfAssessment = { viewModel.selectSelfAssessment(it) }
+                    )
+
                     ReviewStep.DETAIL -> DetailCard(
                         card = card,
                         isCorrect = uiState.isCorrect,
@@ -286,6 +328,31 @@ fun ReviewScreen(
                         reviewMode = uiState.reviewMode,
                         tts = tts,
                         ttsReady = ttsReady
+                    )
+
+                    ReviewStep.DICTATION -> DictationCard(
+                        card = card,
+                        input = uiState.dictationInput,
+                        result = uiState.dictationResult,
+                        isEinkMode = isEinkMode,
+                        tts = tts,
+                        ttsReady = ttsReady,
+                        onInputChange = { viewModel.updateDictationInput(it) },
+                        onPlayAudio = { audioPlayer.play(card.audioUrl, card.question) },
+                        onCheck = { viewModel.checkDictation() },
+                        onFinish = { viewModel.finishDictation() }
+                    )
+
+                    ReviewStep.FILL_BLANK -> FillBlankCard(
+                        card = card,
+                        input = uiState.fillBlankInput,
+                        result = uiState.fillBlankResult,
+                        isEinkMode = isEinkMode,
+                        tts = tts,
+                        ttsReady = ttsReady,
+                        onInputChange = { viewModel.updateFillBlankInput(it) },
+                        onCheck = { viewModel.checkFillBlank() },
+                        onFinish = { viewModel.finishFillBlank() }
                     )
 
                     ReviewStep.SPELLING -> {}
@@ -308,7 +375,9 @@ fun ReviewScreen(
                 onAssessSelection = { viewModel.assessCurrentFromSelection() },
                 onMarkMastered = { viewModel.markMastered() },
                 onBaicizhanKnow = { viewModel.onBaicizhanKnow() },
-                onBaicizhanShowDetail = { viewModel.onBaicizhanShowDetail() }
+                onBaicizhanShowDetail = { viewModel.onBaicizhanShowDetail() },
+                onChangeSelfAssessment = { viewModel.changeSelfAssessment(it) },
+                onSubmitBbdcAssessment = { viewModel.submitBbdcAssessment() }
             )
 
             uiState.nextScheduleInfo?.let {
@@ -326,7 +395,7 @@ fun ReviewScreen(
 }
 
 @Composable
-private fun SpeakButton(
+internal fun SpeakButton(
     text: String,
     tts: TextToSpeech,
     ttsReady: Boolean,
@@ -357,7 +426,7 @@ private fun scheduleSubtext(interval: Int?): String = interval?.let {
 } ?: ""
 
 @Composable
-private fun TypeLabel(cardType: String, isEinkMode: Boolean) {
+internal fun TypeLabel(cardType: String, isEinkMode: Boolean) {
     val label = when (cardType) {
         CardEntity.TYPE_FILL_BLANK -> "填空"
         CardEntity.TYPE_CODE -> "代码"
@@ -403,7 +472,7 @@ private fun CodeBlock(text: String) {
 }
 
 @Composable
-private fun AudioButton(
+internal fun AudioButton(
     audioUrl: String?,
     isEinkMode: Boolean
 ) {
@@ -1278,7 +1347,9 @@ private fun BottomActionArea(
     onAssessSelection: () -> Unit,
     onMarkMastered: () -> Unit,
     onBaicizhanKnow: () -> Unit,
-    onBaicizhanShowDetail: () -> Unit
+    onBaicizhanShowDetail: () -> Unit,
+    onChangeSelfAssessment: (SelfAssessment) -> Unit,
+    onSubmitBbdcAssessment: () -> Unit
 ) {
     when (uiState.step) {
         ReviewStep.QUESTION -> {
@@ -1415,25 +1486,57 @@ private fun BottomActionArea(
                 }
 
                 ReviewMode.BBDC -> {
-                    if (isImmersive) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ActionIconButton(
-                                icon = Icons.Filled.Create,
-                                label = "随手拼",
-                                onClick = onStartSpelling,
-                                isEinkMode = isEinkMode,
-                                modifier = Modifier.weight(1f)
-                            )
+                    val showSelfAssessment = uiState.selfAssessment != null || uiState.isCorrect == false
+                    if (showSelfAssessment) {
+                        val currentAssessment = uiState.selfAssessment ?: SelfAssessment.WRONG
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                BbdcSelfAssessmentChip(
+                                    text = "记对了",
+                                    selected = currentAssessment == SelfAssessment.CORRECT,
+                                    isEinkMode = isEinkMode,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onChangeSelfAssessment(SelfAssessment.CORRECT) }
+                                )
+                                BbdcSelfAssessmentChip(
+                                    text = "有点模糊",
+                                    selected = currentAssessment == SelfAssessment.FUZZY,
+                                    isEinkMode = isEinkMode,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onChangeSelfAssessment(SelfAssessment.FUZZY) }
+                                )
+                            }
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                BbdcSelfAssessmentChip(
+                                    text = "记不清",
+                                    selected = currentAssessment == SelfAssessment.FORGOT,
+                                    isEinkMode = isEinkMode,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onChangeSelfAssessment(SelfAssessment.FORGOT) }
+                                )
+                                BbdcSelfAssessmentChip(
+                                    text = "记错了",
+                                    selected = currentAssessment == SelfAssessment.WRONG,
+                                    isEinkMode = isEinkMode,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = { onChangeSelfAssessment(SelfAssessment.WRONG) }
+                                )
+                            }
                             AssessmentButton(
-                                text = "下一个",
+                                text = "提交",
                                 subtext = scheduleSubtext(selectionPreview),
                                 isEinkMode = isEinkMode,
-                                modifier = Modifier.weight(2f),
-                                onClick = { onAssessSelection() }
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    if (uiState.selfAssessment == null) {
+                                        onChangeSelfAssessment(SelfAssessment.WRONG)
+                                    }
+                                    onSubmitBbdcAssessment()
+                                }
                             )
                         }
                     } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (isImmersive) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 ActionIconButton(
                                     icon = Icons.Filled.Create,
@@ -1446,9 +1549,28 @@ private fun BottomActionArea(
                                     text = "下一个",
                                     subtext = scheduleSubtext(selectionPreview),
                                     isEinkMode = isEinkMode,
-                                    modifier = Modifier.weight(1f),
+                                    modifier = Modifier.weight(2f),
                                     onClick = { onAssessSelection() }
                                 )
+                            }
+                        } else {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    ActionIconButton(
+                                        icon = Icons.Filled.Create,
+                                        label = "随手拼",
+                                        onClick = onStartSpelling,
+                                        isEinkMode = isEinkMode,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    AssessmentButton(
+                                        text = "下一个",
+                                        subtext = scheduleSubtext(selectionPreview),
+                                        isEinkMode = isEinkMode,
+                                        modifier = Modifier.weight(1f),
+                                        onClick = { onAssessSelection() }
+                                    )
+                                }
                             }
                         }
                     }
@@ -1479,6 +1601,40 @@ private fun ActionIconButton(
         Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(6.dp))
         Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+@Composable
+private fun BbdcSelfAssessmentChip(
+    text: String,
+    selected: Boolean,
+    isEinkMode: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+    val containerColor = if (selected) {
+        if (isEinkMode) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
+    val borderColor = if (selected) contentColor else MaterialTheme.colorScheme.outline
+
+    androidx.compose.material3.Surface(
+        onClick = onClick,
+        modifier = modifier.height(48.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = containerColor,
+        border = androidx.compose.foundation.BorderStroke(1.5.dp, borderColor)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                color = contentColor,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold
+            )
+        }
     }
 }
 

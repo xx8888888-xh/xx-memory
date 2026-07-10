@@ -85,7 +85,25 @@ data class Card(
 
     /** 已掌握 / 已斩：掌握后不再参与常规复习 */
     @ColumnInfo(name = "mastered")
-    val mastered: Boolean = false
+    val mastered: Boolean = false,
+
+    /**
+     * 学习阶段，专用于不背单词式学习流。
+     * 0 = 新学（四选一）
+     * 1 = 已通过选项（例句自评）
+     * 2 = 已通过例句（独立回忆）
+     * 3 = 已学会，进入常规复习
+     */
+    @ColumnInfo(name = "learning_stage")
+    val learningStage: Int = 0,
+
+    /** 首次学习开始时间戳，用于学习阶段冷却判断 */
+    @ColumnInfo(name = "learning_started_at")
+    val learningStartedAt: Long = 0,
+
+    /** 默写/填空进度（可选），可保存用户上次输入 */
+    @ColumnInfo(name = "dictation_progress")
+    val dictationProgress: String = ""
 ) {
     companion object {
         const val TYPE_QA = "qa"
@@ -93,5 +111,11 @@ data class Card(
         const val TYPE_CODE = "code"
         const val TYPE_IMAGE = "image"
         const val TYPE_AUDIO = "audio"
+        const val TYPE_DICTATION = "dictation"
+
+        const val STAGE_NEW = 0
+        const val STAGE_OPTIONS_PASSED = 1
+        const val STAGE_EXAMPLE_PASSED = 2
+        const val STAGE_LEARNED = 3
     }
 }

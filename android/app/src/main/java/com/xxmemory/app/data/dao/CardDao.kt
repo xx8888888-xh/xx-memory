@@ -71,4 +71,19 @@ interface CardDao {
 
     @Query("UPDATE cards SET is_favorite = NOT is_favorite WHERE id = :cardId")
     suspend fun toggleFavorite(cardId: Long)
+
+    /** 查询指定时间范围内的待复习卡片（用于日历）。 */
+    @Query("SELECT * FROM cards WHERE next_review_date >= :start AND next_review_date < :end AND mastered = 0 ORDER BY next_review_date ASC")
+    suspend fun getCardsForCalendar(start: Long, end: Long): List<Card>
+
+    /** 查询某一天的待复习数量（start/end 为当天 0 点与次日 0 点）。 */
+    @Query("SELECT COUNT(*) FROM cards WHERE next_review_date >= :start AND next_review_date < :end AND mastered = 0")
+    suspend fun getDueCountForDay(start: Long, end: Long): Int
+
+    /** 查询未来 N 天内每天到期数量（用于首页一周视图）。 */
+    @Query("""
+        SELECT COUNT(*) FROM cards
+        WHERE next_review_date >= :start AND next_review_date < :end AND mastered = 0
+    """)
+    suspend fun getDueCountBetween(start: Long, end: Long): Int
 }

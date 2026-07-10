@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,32 +17,30 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
@@ -58,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.data.entity.Card
 import com.xxmemory.app.ui.theme.EinkFilterChip
+import com.xxmemory.app.ui.theme.rememberEinkMode
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -74,6 +75,7 @@ fun ImportScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showManualDialog by remember { mutableStateOf(false) }
+    val isEinkMode = rememberEinkMode()
 
     LaunchedEffect(uiState.importMessage) {
         uiState.importMessage?.let {
@@ -99,45 +101,39 @@ fun ImportScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             if (uiState.isImporting) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary
-                )
+                if (isEinkMode) {
+                    Text(
+                        text = "导入中...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                } else {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
             // File picker section
-            FileImportSection(viewModel = viewModel)
+            FileImportSection(viewModel = viewModel, isEinkMode = isEinkMode)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // URL input section
-            UrlImportSection(
-                urlInput = uiState.urlInput,
-                onUrlChange = { viewModel.updateUrlInput(it) },
-                onImport = { viewModel.importFromJson(it) }
+            // Collapsible secondary import menu
+            MoreImportOptionsCard(
+                uiState = uiState,
+                viewModel = viewModel,
+                isEinkMode = isEinkMode,
+                onShowManualDialog = { showManualDialog = true }
             )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Manual add button
-            OutlinedButton(
-                onClick = { showManualDialog = true },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("手动添加卡片")
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // AI Skill card section
-            AiSkillSection()
             Spacer(modifier = Modifier.height(16.dp))
 
             // Supported format chips
             FormatChipsSection(
                 selectedFormat = uiState.selectedFormat,
-                onFormatSelected = { viewModel.selectFormat(it) }
+                onFormatSelected = { viewModel.selectFormat(it) },
+                isEinkMode = isEinkMode
             )
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -151,10 +147,18 @@ fun ImportScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (uiState.isLoading) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = MaterialTheme.colorScheme.primary
-                )
+                if (isEinkMode) {
+                    Text(
+                        text = "加载中...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                } else {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             if (uiState.recentImports.isEmpty()) {
@@ -172,7 +176,7 @@ fun ImportScreen(
                 }
             } else {
                 uiState.recentImports.forEach { card ->
-                    RecentImportItem(card = card, viewModel = viewModel)
+                    RecentImportItem(card = card, viewModel = viewModel, isEinkMode = isEinkMode)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -213,7 +217,7 @@ fun ImportScreen(
 }
 
 @Composable
-private fun FileImportSection(viewModel: ImportViewModel) {
+private fun FileImportSection(viewModel: ImportViewModel, isEinkMode: Boolean) {
     val context = LocalContext.current
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -226,7 +230,10 @@ private fun FileImportSection(viewModel: ImportViewModel) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { launcher.launch("*/*") },
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { launcher.launch("*/*") },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
@@ -246,7 +253,7 @@ private fun FileImportSection(viewModel: ImportViewModel) {
                 Icon(
                     imageVector = Icons.Filled.FileUpload,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -269,187 +276,254 @@ private fun FileImportSection(viewModel: ImportViewModel) {
 }
 
 @Composable
-private fun UrlImportSection(
-    urlInput: String,
-    onUrlChange: (String) -> Unit,
-    onImport: (String) -> Unit
+private fun MoreImportOptionsCard(
+    uiState: ImportUiState,
+    viewModel: ImportViewModel,
+    isEinkMode: Boolean,
+    onShowManualDialog: () -> Unit
 ) {
-    var showUrlField by remember { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
+    var showJsonInput by remember { mutableStateOf(false) }
+    var showAiDialog by remember { mutableStateOf(false) }
 
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { showUrlField = !showUrlField },
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { expanded = !expanded },
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreHoriz,
+                            contentDescription = null,
+                            tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "更多导入方式",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "JSON、手动添加、AI 智能导入",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = if (expanded) "收起" else "展开",
+                    tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (expanded) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // JSON import
+                Row(
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { showJsonInput = !showJsonInput }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Link,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.tertiary,
+                        tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(24.dp)
                     )
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "从 JSON 导入",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
                     )
-                    Text(
-                        text = "粘贴 JSON 数据，格式: {\"cards\":[{\"question\":\"...\",\"answer\":\"...\"}]} 或 [{\"front\":\"...\",\"back\":\"...\"}]",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Icon(
+                        imageVector = if (showJsonInput) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = null,
+                        tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-            if (showUrlField) {
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = urlInput,
-                    onValueChange = onUrlChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("粘贴 JSON 数据...") },
-                    minLines = 3
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { onImport(urlInput) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                if (showJsonInput) {
+                    OutlinedTextField(
+                        value = uiState.urlInput,
+                        onValueChange = { viewModel.updateUrlInput(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("粘贴 JSON 数据...") },
+                        minLines = 3
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { viewModel.importFromJson(uiState.urlInput) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("导入")
+                    }
+                }
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // Manual add
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { onShowManualDialog() }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("导入")
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
+                        tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "手动添加卡片",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-            }
-        }
-    }
-}
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-@Composable
-private fun AiSkillSection() {
-    var showAiDialog by remember { mutableStateOf(false) }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { showAiDialog = true },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.tertiary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.SmartToy,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
+                // AI import
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) { showAiDialog = true }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SmartToy,
+                        contentDescription = null,
+                        tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
                     Text(
                         text = "AI 智能导入",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "配合 AI Skill 文件使用，生成记忆卡片",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
                     )
                 }
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            }
         }
     }
 
     if (showAiDialog) {
-        AlertDialog(
-            onDismissRequest = { showAiDialog = false },
-            title = { Text("AI 智能导入", fontWeight = FontWeight.Bold) },
-            text = {
-                Text("AI 智能导入需要配合项目中的 AI Skill 文件使用。\n\n使用方式：\n1. 将 skill/xx-memory-skill.json 文件导入支持的 AI 助手\n2. 通过对话让 AI 生成符合项目格式的 JSON/CSV/Markdown/TXT 卡片数据\n3. 将生成的内容粘贴到「从 JSON 导入」或保存为文件导入\n\nAI 助手将帮助你批量生成记忆卡片。")
-            },
-            confirmButton = {
-                TextButton(onClick = { showAiDialog = false }) {
-                    Text("知道了")
-                }
-            }
+        AiImportInfoDialog(
+            onDismiss = { showAiDialog = false },
+            isEinkMode = isEinkMode
         )
     }
+}
+
+@Composable
+private fun AiImportInfoDialog(
+    onDismiss: () -> Unit,
+    isEinkMode: Boolean
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("AI 智能导入", fontWeight = FontWeight.Bold) },
+        text = {
+            Text(
+                "AI 智能导入需要配合项目中的 AI Skill 文件使用。\n\n使用方式：\n1. 将 skill/xx-memory-skill.json 文件导入支持的 AI 助手\n2. 通过对话让 AI 生成符合项目格式的 JSON/CSV/Markdown/TXT 卡片数据\n3. 将生成的内容粘贴到「从 JSON 导入」或保存为文件导入\n\nAI 助手将帮助你批量生成记忆卡片。"
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("知道了")
+            }
+        }
+    )
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun FormatChipsSection(
     selectedFormat: String,
-    onFormatSelected: (String) -> Unit
+    onFormatSelected: (String) -> Unit,
+    isEinkMode: Boolean
 ) {
     Column {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                EinkFilterChip(
-                    selected = selectedFormat == "JSON",
-                    onClick = { onFormatSelected(if (selectedFormat == "JSON") "" else "JSON") },
-                    label = "JSON"
-                )
-                EinkFilterChip(
-                    selected = selectedFormat == "CSV",
-                    onClick = { onFormatSelected(if (selectedFormat == "CSV") "" else "CSV") },
-                    label = "CSV"
-                )
-                EinkFilterChip(
-                    selected = selectedFormat == "TXT",
-                    onClick = { onFormatSelected(if (selectedFormat == "TXT") "" else "TXT") },
-                    label = "TXT"
-                )
-                EinkFilterChip(
-                    selected = selectedFormat == "Markdown",
-                    onClick = { onFormatSelected(if (selectedFormat == "Markdown") "" else "Markdown") },
-                    label = "Markdown"
-                )
-            }
-            if (selectedFormat.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "已选择格式: $selectedFormat",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            EinkFilterChip(
+                selected = selectedFormat == "JSON",
+                onClick = { onFormatSelected(if (selectedFormat == "JSON") "" else "JSON") },
+                label = "JSON"
+            )
+            EinkFilterChip(
+                selected = selectedFormat == "CSV",
+                onClick = { onFormatSelected(if (selectedFormat == "CSV") "" else "CSV") },
+                label = "CSV"
+            )
+            EinkFilterChip(
+                selected = selectedFormat == "TXT",
+                onClick = { onFormatSelected(if (selectedFormat == "TXT") "" else "TXT") },
+                label = "TXT"
+            )
+            EinkFilterChip(
+                selected = selectedFormat == "Markdown",
+                onClick = { onFormatSelected(if (selectedFormat == "Markdown") "" else "Markdown") },
+                label = "Markdown"
+            )
         }
+        if (selectedFormat.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "已选择格式: $selectedFormat",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Composable
-private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
+private fun RecentImportItem(card: Card, viewModel: ImportViewModel, isEinkMode: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -464,7 +538,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
             Icon(
                 imageVector = Icons.Filled.Description,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -490,7 +564,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                    tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -653,6 +727,11 @@ private fun ManualCardDialog(
                         onClick = { selectedType = Card.TYPE_AUDIO },
                         label = "音频卡"
                     )
+                    EinkFilterChip(
+                        selected = selectedType == Card.TYPE_DICTATION,
+                        onClick = { selectedType = Card.TYPE_DICTATION },
+                        label = "默写卡"
+                    )
                 }
                 if (selectedType == Card.TYPE_IMAGE) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -664,7 +743,7 @@ private fun ManualCardDialog(
                         singleLine = true
                     )
                 }
-                if (selectedType == Card.TYPE_AUDIO) {
+                if (selectedType == Card.TYPE_AUDIO || selectedType == Card.TYPE_DICTATION) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = audioUrl,

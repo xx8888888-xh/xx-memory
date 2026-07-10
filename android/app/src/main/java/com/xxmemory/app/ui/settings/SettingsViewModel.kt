@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.data.SettingsManager
 import com.xxmemory.app.domain.NotificationScheduler
+import com.xxmemory.app.domain.SchedulerUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +31,10 @@ data class SettingsUiState(
     val bbdcImmersiveMode: Boolean = false,
     val userName: String = "用户",
     val userEmail: String = "user@example.com",
+    val studyMode: String = "free",
+    val focusedTimeSlots: String = "08:00,12:00,20:00",
+    val ttsAutoPlayQuestion: Boolean = false,
+    val ttsAutoPlayAnswer: Boolean = true,
     val permissionRationale: String? = null
 )
 
@@ -58,7 +63,11 @@ class SettingsViewModel : ViewModel() {
             baicizhanDeepMode = settingsManager.baicizhanDeepMode,
             bbdcImmersiveMode = settingsManager.bbdcImmersiveMode,
             userName = settingsManager.userName,
-            userEmail = settingsManager.userEmail
+            userEmail = settingsManager.userEmail,
+            studyMode = settingsManager.studyMode,
+            focusedTimeSlots = settingsManager.focusedTimeSlots,
+            ttsAutoPlayQuestion = settingsManager.ttsAutoPlayQuestion,
+            ttsAutoPlayAnswer = settingsManager.ttsAutoPlayAnswer
         )
     }
 
@@ -132,6 +141,16 @@ class SettingsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(autoPlayAudio = enabled)
     }
 
+    fun toggleTtsAutoPlayQuestion(enabled: Boolean) {
+        settingsManager.ttsAutoPlayQuestion = enabled
+        _uiState.value = _uiState.value.copy(ttsAutoPlayQuestion = enabled)
+    }
+
+    fun toggleTtsAutoPlayAnswer(enabled: Boolean) {
+        settingsManager.ttsAutoPlayAnswer = enabled
+        _uiState.value = _uiState.value.copy(ttsAutoPlayAnswer = enabled)
+    }
+
     fun toggleShuffle(enabled: Boolean) {
         settingsManager.shuffleCards = enabled
         _uiState.value = _uiState.value.copy(shuffleCards = enabled)
@@ -161,6 +180,27 @@ class SettingsViewModel : ViewModel() {
     fun setReviewMode(mode: String) {
         settingsManager.reviewMode = mode
         _uiState.value = _uiState.value.copy(reviewMode = mode)
+    }
+
+    fun setStudyMode(mode: String) {
+        settingsManager.studyMode = mode
+        _uiState.value = _uiState.value.copy(studyMode = mode)
+    }
+
+    /**
+     * 保存集中模式时间点字符串，仅在格式全部合法时返回 true 并持久化。
+     */
+    fun setFocusedTimeSlots(slots: String): Boolean {
+        val parsed = SchedulerUtils.parseFocusedSlots(slots)
+        val inputSlots = slots.split(",", "；", ";", " ")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        if (inputSlots.isNotEmpty() && parsed.size != inputSlots.size) {
+            return false
+        }
+        settingsManager.focusedTimeSlots = parsed.joinToString(",")
+        _uiState.value = _uiState.value.copy(focusedTimeSlots = parsed.joinToString(","))
+        return true
     }
 
     fun toggleBaicizhanDeepMode(enabled: Boolean) {

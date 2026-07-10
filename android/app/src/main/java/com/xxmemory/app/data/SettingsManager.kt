@@ -81,4 +81,30 @@ class SettingsManager(context: Context) {
     var userEmail: String
         get() = prefs.getString("user_email", "user@example.com") ?: "user@example.com"
         set(value) = prefs.edit().putString("user_email", value).apply()
+
+    /**
+     * 复习时间安排模式。
+     * - "free"：自由模式，由算法自主安排。
+     * - "focused"：集中模式，算法结果迁就到用户指定时间点。
+     */
+    var studyMode: String
+        get() = prefs.getString("study_mode", "free") ?: "free"
+        set(value) = prefs.edit().putString("study_mode", value).apply()
+
+    /**
+     * 集中模式下的用户指定时间点，逗号分隔 HH:mm，例如 "08:00,12:00,20:00"。
+     */
+    var focusedTimeSlots: String
+        get() = prefs.getString("focused_time_slots", "08:00,12:00,20:00") ?: "08:00,12:00,20:00"
+        set(value) = prefs.edit().putString("focused_time_slots", value).apply()
+
+    /** 进入卡片时是否自动朗读问题（或播放音频）。 */
+    var ttsAutoPlayQuestion: Boolean
+        get() = prefs.getBoolean("tts_auto_play_question", false)
+        set(value) = prefs.edit().putBoolean("tts_auto_play_question", value).apply()
+
+    /** 揭晓答案后是否自动朗读答案（或播放音频）。 */
+    var ttsAutoPlayAnswer: Boolean
+        get() = prefs.getBoolean("tts_auto_play_answer", true)
+        set(value) = prefs.edit().putBoolean("tts_auto_play_answer", value).apply()
 }

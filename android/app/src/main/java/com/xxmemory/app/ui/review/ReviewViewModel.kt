@@ -9,6 +9,7 @@ import com.xxmemory.app.data.entity.Card
 import com.xxmemory.app.data.entity.ReviewLog
 import com.xxmemory.app.data.repository.CardRepository
 import com.xxmemory.app.domain.EbbinghausAlgorithm
+import com.xxmemory.app.domain.SchedulerUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * 支持的复习模式。
  * - FLASHCARD: 经典闪卡，翻面自评。
  * - BAICIZHAN: 看词选义，支持提示、押韵、斩熟词、拼写。
- * - BBDC: 认识/不认识二选一，支持例句、派生词、随手拼。
+ * - BBDC: 不背单词式学习流（四选一 → 例句自评 → 独立回忆 → 常规复习）。
  */
 enum class ReviewMode(val value: String) {
     FLASHCARD("flashcard"),
@@ -33,18 +34,25 @@ enum class ReviewMode(val value: String) {
 
 /**
  * 复习步骤状态机。
- * - QUESTION: 展示问题（闪卡/百词斩初始）。
- * - RECALL: 回忆步骤（不背单词初始：认识/不认识）。
- * - OPTIONS: 四选一验证释义。
- * - DETAIL: 展示答案与详细解析。
- * - SPELLING: 拼写测试（弹窗内）。
  */
 enum class ReviewStep {
-    QUESTION,
-    RECALL,
-    OPTIONS,
-    DETAIL,
-    SPELLING
+    QUESTION,           // 闪卡/百词斩问题页
+    RECALL,             // 不背单词：认识/不认识
+    OPTIONS,            // 四选一验证释义
+    EXAMPLE_REVIEW,     // 不背单词：例句自评（清晰 / 记错了）
+    INDEPENDENT_RECALL, // 不背单词：独立回忆（无例句）
+    SELF_ASSESSMENT,    // 自评：记对了 / 有点模糊 / 记不清
+    DETAIL,             // 展示答案与详细解析
+    SPELLING,           // 拼写测试（弹窗内）
+    DICTATION,          // 默写：听音频写全文
+    FILL_BLANK          // 填空：补全挖空
+}
+
+enum class SelfAssessment {
+    CORRECT,    // 记对了 / 清晰
+    FUZZY,      // 有点模糊
+    FORGOT,     // 记不清
+    WRONG       // 记错了
 }
 
 data class ReviewUiState(
@@ -68,7 +76,15 @@ data class ReviewUiState(
     val isCorrect: Boolean? = null,
     val showHint: Boolean = false,
     val showSpelling: Boolean = false,
-    val spellingResult: SpellingResult? = null
+    val spellingResult: SpellingResult? = null,
+
+    // BBDC learning flow
+    val selfAssessment: SelfAssessment? = null,
+    val showAnswer: Boolean = false,
+    val dictationInput: String = "",
+    val dictationResult: SpellingResult? = null,
+    val fillBlankInput: String = "",
+    val fillBlankResult: SpellingResult? = null
 )
 
 sealed class SpellingResult {
@@ -114,7 +130,7 @@ class ReviewViewModel : ViewModel() {
                 allCardsForDistractors = repository.getAllCardsSync()
                     .filter { !it.mastered && it.id !in cards.map { c -> c.id } }
 
-                // Apply daily card limit (cancelable)
+                // Apply daily card limit
                 val limit = if (settingsManager.dailyCardLimitEnabled) {
                     settingsManager.dailyCardLimit.coerceAtLeast(1)
                 } else {
@@ -127,7 +143,7 @@ class ReviewViewModel : ViewModel() {
 
                 val firstCard = finalCards.firstOrNull()
                 val mode = ReviewMode.from(settingsManager.reviewMode)
-                val initialStep = initialStepForMode(mode)
+                val initialStep = initialStepForMode(mode, firstCard)
 
                 _uiState.value = ReviewUiState(
                     cards = finalCards,
@@ -153,10 +169,25 @@ class ReviewViewModel : ViewModel() {
         }
     }
 
-    private fun initialStepForMode(mode: ReviewMode): ReviewStep = when (mode) {
+    private fun initialStepForMode(mode: ReviewMode, card: Card?): ReviewStep = when (mode) {
         ReviewMode.FLASHCARD -> ReviewStep.QUESTION
         ReviewMode.BAICIZHAN -> ReviewStep.QUESTION
-        ReviewMode.BBDC -> ReviewStep.RECALL
+        ReviewMode.BBDC -> initialStepForBbdcCard(card)
+    }
+
+    private fun initialStepForBbdcCard(card: Card?): ReviewStep {
+        card ?: return ReviewStep.RECALL
+        return when (card.cardType) {
+            Card.TYPE_DICTATION -> ReviewStep.DICTATION
+            Card.TYPE_FILL_BLANK -> ReviewStep.FILL_BLANK
+            else -> when (card.learningStage) {
+                Card.STAGE_NEW -> ReviewStep.OPTIONS
+                Card.STAGE_OPTIONS_PASSED -> ReviewStep.EXAMPLE_REVIEW
+                Card.STAGE_EXAMPLE_PASSED -> ReviewStep.SELF_ASSESSMENT
+                Card.STAGE_LEARNED -> ReviewStep.SELF_ASSESSMENT
+                else -> ReviewStep.SELF_ASSESSMENT
+            }
+        }
     }
 
     /**
@@ -168,7 +199,7 @@ class ReviewViewModel : ViewModel() {
 
         settingsManager.reviewMode = mode.value
         val card = state.currentCard
-        val newStep = initialStepForMode(mode)
+        val newStep = initialStepForMode(mode, card)
         _uiState.value = state.copy(
             reviewMode = mode,
             step = newStep,
@@ -179,9 +210,13 @@ class ReviewViewModel : ViewModel() {
             showHint = false,
             showSpelling = false,
             spellingResult = SpellingResult.Idle,
+            selfAssessment = null,
+            showAnswer = false,
             nextScheduleInfo = null,
-            currentNumber = state.currentIndex + 1,
-            progress = (state.currentIndex + 1).toFloat() / state.cards.size.coerceAtLeast(1)
+            dictationInput = "",
+            dictationResult = null,
+            fillBlankInput = "",
+            fillBlankResult = null
         )
     }
 
@@ -231,7 +266,9 @@ class ReviewViewModel : ViewModel() {
             step = ReviewStep.DETAIL,
             isCorrect = false,
             showHint = true,
-            selectedOption = null
+            selectedOption = null,
+            selfAssessment = SelfAssessment.WRONG,
+            showAnswer = true
         )
     }
 
@@ -267,9 +304,174 @@ class ReviewViewModel : ViewModel() {
         _uiState.value = state.copy(
             selectedOption = option,
             isCorrect = selectedCorrect,
-            step = ReviewStep.DETAIL,
-            showHint = !selectedCorrect || state.showHint
+            step = if (selectedCorrect && state.reviewMode == ReviewMode.BBDC) {
+                // BBDC 选对后直接进入下一张（stage 0 -> 1）
+                ReviewStep.DETAIL
+            } else {
+                ReviewStep.DETAIL
+            },
+            showHint = !selectedCorrect || state.showHint,
+            selfAssessment = if (selectedCorrect) SelfAssessment.CORRECT else null,
+            showAnswer = true
         )
+        if (selectedCorrect && state.reviewMode == ReviewMode.BBDC) {
+            // 直接评估：stage 0 -> 1
+            assessBbdcStage(quality = 3, nextStage = Card.STAGE_OPTIONS_PASSED)
+        }
+    }
+
+    /** 不背单词 Stage 1：例句自评。 */
+    fun assessExampleReview(clear: Boolean) {
+        if (clear) {
+            // 清晰：进入 stage 2
+            assessBbdcStage(quality = 3, nextStage = Card.STAGE_EXAMPLE_PASSED)
+        } else {
+            // 记错了：保持 stage 1
+            _uiState.value = _uiState.value.copy(
+                step = ReviewStep.DETAIL,
+                selfAssessment = SelfAssessment.WRONG,
+                showAnswer = true
+            )
+        }
+    }
+
+    /** 不背单词 Stage 2/3：开始自评。 */
+    fun selectSelfAssessment(assessment: SelfAssessment) {
+        _uiState.value = _uiState.value.copy(
+            selfAssessment = assessment,
+            step = ReviewStep.DETAIL,
+            showAnswer = true
+        )
+    }
+
+    /** 查看答案后更改自评。 */
+    fun changeSelfAssessment(assessment: SelfAssessment) {
+        _uiState.value = _uiState.value.copy(selfAssessment = assessment)
+    }
+
+    /** 提交 BBDC 自评结果。 */
+    fun submitBbdcAssessment() {
+        val state = _uiState.value
+        val card = state.currentCard ?: return
+        val assessment = state.selfAssessment ?: SelfAssessment.FUZZY
+        val quality = when (assessment) {
+            SelfAssessment.CORRECT -> 3
+            SelfAssessment.FUZZY -> 2
+            SelfAssessment.FORGOT -> 1
+            SelfAssessment.WRONG -> 0
+        }
+        val nextStage = when (card.learningStage) {
+            Card.STAGE_NEW -> Card.STAGE_NEW
+            Card.STAGE_OPTIONS_PASSED -> if (assessment == SelfAssessment.CORRECT) Card.STAGE_EXAMPLE_PASSED else Card.STAGE_OPTIONS_PASSED
+            Card.STAGE_EXAMPLE_PASSED -> if (assessment == SelfAssessment.CORRECT) Card.STAGE_LEARNED else Card.STAGE_OPTIONS_PASSED
+            Card.STAGE_LEARNED -> Card.STAGE_LEARNED
+            else -> card.learningStage
+        }
+        assessBbdcStage(quality = quality, nextStage = nextStage)
+    }
+
+    private fun assessBbdcStage(quality: Int, nextStage: Int) {
+        if (!isAssessing.compareAndSet(false, true)) return
+        viewModelScope.launch {
+            try {
+                val state = _uiState.value
+                val card = state.currentCard ?: return@launch
+                val learningStartedAt = if (card.learningStartedAt == 0L) System.currentTimeMillis() else card.learningStartedAt
+
+                val algorithm = EbbinghausAlgorithm.getAlgorithm(settingsManager.algorithmType)
+                val result = algorithm.calculate(
+                    quality = quality,
+                    repetitions = card.repetitions,
+                    easeFactor = card.easeFactor,
+                    currentInterval = card.interval
+                )
+
+                val nextReviewDate = applyStudyMode(result.nextReviewDate)
+
+                val updatedCard = card.copy(
+                    repetitions = result.nextRepetitions,
+                    easeFactor = result.nextEaseFactor,
+                    difficulty = if (result.nextDifficulty > 0) result.nextDifficulty.toFloat() else card.difficulty,
+                    interval = result.nextInterval,
+                    nextReviewDate = nextReviewDate,
+                    learningStage = nextStage,
+                    learningStartedAt = learningStartedAt
+                )
+                repository.updateCard(updatedCard)
+
+                val log = ReviewLog(
+                    cardId = card.id,
+                    quality = quality,
+                    reviewDate = System.currentTimeMillis(),
+                    nextInterval = result.nextInterval
+                )
+                repository.insertReviewLog(log)
+
+                moveToNext("下次复习: ${getIntervalText(result.nextInterval)}")
+            } finally {
+                isAssessing.set(false)
+            }
+        }
+    }
+
+    /**
+     * 使用 SRS 算法评估卡片并进入下一张（闪卡/百词斩通用）。
+     * @param quality 0-3，对应忘记/困难/良好/简单。
+     */
+    fun assessCard(quality: Int) {
+        if (!isAssessing.compareAndSet(false, true)) return
+
+        viewModelScope.launch {
+            try {
+                val state = _uiState.value
+                val card = state.currentCard ?: return@launch
+
+                val algorithm = EbbinghausAlgorithm.getAlgorithm(settingsManager.algorithmType)
+                val result = algorithm.calculate(
+                    quality = quality,
+                    repetitions = card.repetitions,
+                    easeFactor = card.easeFactor,
+                    currentInterval = card.interval
+                )
+
+                val nextReviewDate = applyStudyMode(result.nextReviewDate)
+
+                val updatedCard = card.copy(
+                    repetitions = result.nextRepetitions,
+                    easeFactor = result.nextEaseFactor,
+                    difficulty = if (result.nextDifficulty > 0) result.nextDifficulty.toFloat() else card.difficulty,
+                    interval = result.nextInterval,
+                    nextReviewDate = nextReviewDate
+                )
+                repository.updateCard(updatedCard)
+
+                val log = ReviewLog(
+                    cardId = card.id,
+                    quality = quality,
+                    reviewDate = System.currentTimeMillis(),
+                    nextInterval = result.nextInterval
+                )
+                repository.insertReviewLog(log)
+
+                moveToNext("下次复习: ${getIntervalText(result.nextInterval)}")
+            } finally {
+                isAssessing.set(false)
+            }
+        }
+    }
+
+    /**
+     * 根据当前模式与选择结果推断 quality 并评估。
+     */
+    fun assessCurrentFromSelection() {
+        val state = _uiState.value
+        val quality = when {
+            state.isCorrect == true -> 3
+            state.selectedOption != null -> 1  // 选错
+            state.step == ReviewStep.DETAIL && state.showHint -> 0  // 主动放弃/不认识
+            else -> 1
+        }
+        assessCard(quality)
     }
 
     /** 斩熟词，标记为掌握并跳过后续复习。 */
@@ -296,66 +498,6 @@ class ReviewViewModel : ViewModel() {
         }
     }
 
-    /**
-     * 使用 SRS 算法评估卡片并进入下一张。
-     * @param quality 0-3，对应忘记/困难/良好/简单。
-     */
-    fun assessCard(quality: Int) {
-        if (!isAssessing.compareAndSet(false, true)) return
-
-        viewModelScope.launch {
-            try {
-                val state = _uiState.value
-                val card = state.currentCard ?: return@launch
-
-                val algorithm = EbbinghausAlgorithm.getAlgorithm(settingsManager.algorithmType)
-                val result = algorithm.calculate(
-                    quality = quality,
-                    repetitions = card.repetitions,
-                    easeFactor = card.easeFactor,
-                    currentInterval = card.interval
-                )
-
-                val updatedCard = card.copy(
-                    repetitions = result.nextRepetitions,
-                    easeFactor = result.nextEaseFactor,
-                    difficulty = if (result.nextDifficulty > 0) result.nextDifficulty.toFloat() else card.difficulty,
-                    interval = result.nextInterval,
-                    nextReviewDate = result.nextReviewDate
-                )
-                repository.updateCard(updatedCard)
-
-                val log = ReviewLog(
-                    cardId = card.id,
-                    quality = quality,
-                    reviewDate = System.currentTimeMillis(),
-                    nextInterval = result.nextInterval
-                )
-                repository.insertReviewLog(log)
-
-                moveToNext("下次复习: ${getIntervalText(result.nextInterval)}")
-            } finally {
-                isAssessing.set(false)
-            }
-        }
-    }
-
-    /**
-     * 根据当前模式与选择结果推断 quality 并评估。
-     * - 闪卡模式：不应调用此方法，闪卡直接由用户选择 quality。
-     * - 百词斩/不背单词：基于是否选对或是否主动放弃推断。
-     */
-    fun assessCurrentFromSelection() {
-        val state = _uiState.value
-        val quality = when {
-            state.isCorrect == true -> 3
-            state.selectedOption != null -> 1  // 选错
-            state.step == ReviewStep.DETAIL && state.showHint -> 0  // 主动放弃/不认识
-            else -> 1
-        }
-        assessCard(quality)
-    }
-
     /** 移动到下一题。 */
     private fun moveToNext(scheduleInfo: String?) {
         val state = _uiState.value
@@ -374,12 +516,18 @@ class ReviewViewModel : ViewModel() {
                 isCorrect = null,
                 showHint = false,
                 showSpelling = false,
-                spellingResult = SpellingResult.Idle
+                spellingResult = SpellingResult.Idle,
+                selfAssessment = null,
+                showAnswer = false,
+                dictationInput = "",
+                dictationResult = null,
+                fillBlankInput = "",
+                fillBlankResult = null
             )
         } else {
             val nextCard = state.cards[nextIndex]
             val mode = ReviewMode.from(settingsManager.reviewMode)
-            val nextStep = initialStepForMode(mode)
+            val nextStep = initialStepForMode(mode, nextCard)
             _uiState.value = state.copy(
                 currentIndex = nextIndex,
                 currentCard = nextCard,
@@ -394,7 +542,13 @@ class ReviewViewModel : ViewModel() {
                 isCorrect = null,
                 showHint = false,
                 showSpelling = false,
-                spellingResult = SpellingResult.Idle
+                spellingResult = SpellingResult.Idle,
+                selfAssessment = null,
+                showAnswer = false,
+                dictationInput = "",
+                dictationResult = null,
+                fillBlankInput = "",
+                fillBlankResult = null
             )
         }
     }
@@ -410,7 +564,6 @@ class ReviewViewModel : ViewModel() {
 
     /**
      * 预览当前卡片在指定 quality 下的下次复习间隔（天）。
-     * 返回 null 表示没有当前卡片或计算失败。
      */
     fun previewSchedule(quality: Int): Int? {
         val card = _uiState.value.currentCard ?: return null
@@ -458,7 +611,7 @@ class ReviewViewModel : ViewModel() {
         )
     }
 
-    /** 完成拼写测试并评估。拼写正确视为简单(quality=3)，错误视为忘记(quality=0)。 */
+    /** 完成拼写测试并评估。 */
     fun finishSpelling() {
         val wasCorrect = _uiState.value.spellingResult is SpellingResult.Correct
         _uiState.value = _uiState.value.copy(showSpelling = false)
@@ -475,6 +628,71 @@ class ReviewViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(
                 currentCard = card.copy(isFavorite = !card.isFavorite)
             )
+        }
+    }
+
+    // --- Dictation & Fill Blank ---
+
+    fun updateDictationInput(input: String) {
+        _uiState.value = _uiState.value.copy(dictationInput = input)
+    }
+
+    fun checkDictation() {
+        val state = _uiState.value
+        val card = state.currentCard ?: return
+        val input = state.dictationInput.trim()
+        val correct = card.answer.trim()
+        val isCorrect = normalizeText(input) == normalizeText(correct)
+        _uiState.value = state.copy(
+            dictationResult = if (isCorrect) SpellingResult.Correct else SpellingResult.Wrong(correct)
+        )
+    }
+
+    fun finishDictation() {
+        val wasCorrect = _uiState.value.dictationResult is SpellingResult.Correct
+        val quality = if (wasCorrect) 3 else 0
+        val card = _uiState.value.currentCard ?: return
+        val nextStage = if (card.learningStage < Card.STAGE_LEARNED && wasCorrect) {
+            (card.learningStage + 1).coerceAtMost(Card.STAGE_LEARNED)
+        } else card.learningStage
+        assessBbdcStage(quality = quality, nextStage = nextStage)
+    }
+
+    fun updateFillBlankInput(input: String) {
+        _uiState.value = _uiState.value.copy(fillBlankInput = input)
+    }
+
+    fun checkFillBlank() {
+        val state = _uiState.value
+        val card = state.currentCard ?: return
+        val input = state.fillBlankInput.trim()
+        val correct = card.answer.trim()
+        val isCorrect = normalizeText(input) == normalizeText(correct)
+        _uiState.value = state.copy(
+            fillBlankResult = if (isCorrect) SpellingResult.Correct else SpellingResult.Wrong(correct)
+        )
+    }
+
+    fun finishFillBlank() {
+        val wasCorrect = _uiState.value.fillBlankResult is SpellingResult.Correct
+        val quality = if (wasCorrect) 3 else 0
+        val card = _uiState.value.currentCard ?: return
+        val nextStage = if (card.learningStage < Card.STAGE_LEARNED && wasCorrect) {
+            (card.learningStage + 1).coerceAtMost(Card.STAGE_LEARNED)
+        } else card.learningStage
+        assessBbdcStage(quality = quality, nextStage = nextStage)
+    }
+
+    private fun normalizeText(text: String): String {
+        return text.replace("，", ",").replace("。", ".").replace(" ", "").lowercase()
+    }
+
+    private fun applyStudyMode(nextDayTimestamp: Long): Long {
+        return if (settingsManager.studyMode == "focused") {
+            val slots = SchedulerUtils.parseFocusedSlots(settingsManager.focusedTimeSlots)
+            SchedulerUtils.adjustToFocusedSlot(nextDayTimestamp, slots)
+        } else {
+            nextDayTimestamp
         }
     }
 }

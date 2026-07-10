@@ -37,12 +37,12 @@ import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SpeakerNotes
 import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Divider
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +67,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.xxmemory.app.domain.SchedulerUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,6 +79,8 @@ fun SettingsScreen(
 
     var showProfileDialog by remember { mutableStateOf(false) }
     var showTimePickerDialog by remember { mutableStateOf(false) }
+    var focusedSlotsInput by remember(uiState.focusedTimeSlots) { mutableStateOf(uiState.focusedTimeSlots) }
+    var focusedSlotsError by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -161,6 +164,99 @@ fun SettingsScreen(
                 checked = uiState.showDetailFirst,
                 onCheckedChange = { viewModel.toggleShowDetailFirst(it) }
             )
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Study mode section
+        SectionTitle("复习模式")
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingsCard {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "当前模式: ${if (uiState.studyMode == "focused") "集中模式" else "自由模式"}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (uiState.studyMode == "focused") {
+                        "算法安排的复习日会迁就到你指定的集中时间段。"
+                    } else {
+                        "完全由算法自主安排每日复习。"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    EinkFilterChip(
+                        selected = uiState.studyMode == "free",
+                        onClick = { viewModel.setStudyMode("free") },
+                        label = "自由模式",
+                        modifier = Modifier.weight(1f)
+                    )
+                    EinkFilterChip(
+                        selected = uiState.studyMode == "focused",
+                        onClick = { viewModel.setStudyMode("focused") },
+                        label = "集中模式",
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (uiState.studyMode == "focused") {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = focusedSlotsInput,
+                        onValueChange = {
+                            focusedSlotsInput = it
+                            focusedSlotsError = null
+                        },
+                        label = { Text("集中复习时间 (HH:mm, 逗号分隔)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        isError = focusedSlotsError != null,
+                        supportingText = {
+                            focusedSlotsError?.let {
+                                Text(
+                                    text = it,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    )
+                    val parsed = SchedulerUtils.parseFocusedSlots(focusedSlotsInput)
+                    val inputSlots = focusedSlotsInput.split(",", "；", ";", " ")
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                    val isValid = inputSlots.isEmpty() || parsed.size == inputSlots.size
+                    if (!isValid) {
+                        Text(
+                            text = "格式示例：08:00,12:00,20:00",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(
+                        onClick = {
+                            if (viewModel.setFocusedTimeSlots(focusedSlotsInput)) {
+                                focusedSlotsError = null
+                                Toast.makeText(context, "已保存复习时间", Toast.LENGTH_SHORT).show()
+                            } else {
+                                focusedSlotsError = "存在非法时间格式，请检查"
+                            }
+                        },
+                        enabled = isValid
+                    ) {
+                        Text("保存时间")
+                    }
+                }
+            }
         }
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -250,6 +346,28 @@ fun SettingsScreen(
                     )
                 }
             }
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // TTS section
+        SectionTitle("朗读")
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingsCard {
+            SwitchItem(
+                icon = Icons.Filled.VolumeUp,
+                title = "进入卡片自动朗读",
+                subtitle = "翻到问题面时自动朗读问题文本",
+                checked = uiState.ttsAutoPlayQuestion,
+                onCheckedChange = { viewModel.toggleTtsAutoPlayQuestion(it) }
+            )
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            SwitchItem(
+                icon = Icons.Filled.VolumeUp,
+                title = "揭晓答案自动朗读",
+                subtitle = "显示答案后自动朗读答案文本",
+                checked = uiState.ttsAutoPlayAnswer,
+                onCheckedChange = { viewModel.toggleTtsAutoPlayAnswer(it) }
+            )
         }
         Spacer(modifier = Modifier.height(20.dp))
 
