@@ -9,12 +9,21 @@ import androidx.compose.foundation.IndicationInstance
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.interaction.InteractionSource
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -87,6 +96,118 @@ private object NoIndication : Indication {
             object : IndicationInstance {
                 override fun ContentDrawScope.drawIndication() {
                     drawContent()
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 墨水屏专用开关：无动画，直接切换，仅使用灰/黑/白。
+ */
+@Composable
+fun EinkSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    val trackColor = when {
+        !enabled -> Color(0xFFE0E0E0)
+        checked -> Color.DarkGray
+        else -> Color(0xFFE0E0E0)
+    }
+    val thumbColor = Color.White
+    val borderColor = if (checked) Color.Black else Color.Gray
+
+    Box(
+        modifier = modifier
+            .width(52.dp)
+            .height(32.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(1.dp, borderColor, RoundedCornerShape(16.dp))
+            .background(trackColor)
+            .then(
+                if (enabled) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { onCheckedChange(!checked) }
+                    )
+                } else Modifier
+            ),
+        contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(2.dp)
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(thumbColor)
+                .border(1.dp, Color.LightGray, CircleShape)
+        )
+    }
+}
+
+/**
+ * 墨水屏专用对话框：无进入/退出动画，直接使用 Dialog + Surface。
+ * 标题、正文、确认/取消按钮与 Material AlertDialog 保持一致。
+ */
+@Composable
+fun EinkAlertDialog(
+    onDismissRequest: () -> Unit,
+    title: @Composable (() -> Unit)? = null,
+    text: @Composable (() -> Unit)? = null,
+    confirmButton: @Composable () -> Unit = {},
+    dismissButton: @Composable (() -> Unit)? = null
+) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = androidx.compose.ui.window.DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = true
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.0f))
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            androidx.compose.material3.Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    title?.let {
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onSurface
+                        ) {
+                            it()
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+                    text?.let {
+                        androidx.compose.runtime.CompositionLocalProvider(
+                            androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant
+                        ) {
+                            it()
+                        }
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        dismissButton?.let { it(); Spacer(modifier = Modifier.width(8.dp)) }
+                        confirmButton()
+                    }
                 }
             }
         }

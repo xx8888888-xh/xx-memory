@@ -31,7 +31,6 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -64,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.data.entity.Card
+import com.xxmemory.app.ui.theme.EinkAlertDialog
 import com.xxmemory.app.ui.theme.EinkFilterChip
 import com.xxmemory.app.ui.theme.rememberEinkMode
 
@@ -192,6 +192,7 @@ fun ImportScreen(
     if (showManualDialog) {
         ManualCardDialog(
             onDismiss = { showManualDialog = false },
+            isEinkMode = isEinkMode,
             onConfirm = { q, a, s, d, tags, type, img, aud, phonetic, example, collocations, etymology, hint, rhyme, derivatives ->
                 viewModel.importManualCard(
                     question = q,
@@ -247,7 +248,13 @@ private fun FileImportSection(viewModel: ImportViewModel, isEinkMode: Boolean) {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                    .background(
+                        if (isEinkMode) {
+                            MaterialTheme.colorScheme.surfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -307,7 +314,13 @@ private fun MoreImportOptionsCard(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)),
+                            .background(
+                                if (isEinkMode) {
+                                    MaterialTheme.colorScheme.surfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                                }
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -380,14 +393,17 @@ private fun MoreImportOptionsCard(
                         onValueChange = { viewModel.updateUrlInput(it) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("粘贴 JSON 数据...") },
-                        minLines = 3
+                        minLines = 3,
+                        maxLines = 5
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = { viewModel.importFromJson(uiState.urlInput) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                        )
                     ) {
                         Text("导入")
                     }
@@ -463,7 +479,7 @@ private fun AiImportInfoDialog(
     onDismiss: () -> Unit,
     isEinkMode: Boolean
 ) {
-    AlertDialog(
+    EinkAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("AI 智能导入", fontWeight = FontWeight.Bold) },
         text = {
@@ -576,6 +592,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel, isEinkMode:
 @Composable
 private fun ManualCardDialog(
     onDismiss: () -> Unit,
+    isEinkMode: Boolean,
     onConfirm: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String) -> Unit
 ) {
     var question by remember { mutableStateOf("") }
@@ -594,7 +611,7 @@ private fun ManualCardDialog(
     var derivatives by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(Card.TYPE_QA) }
 
-    AlertDialog(
+    EinkAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text("手动添加卡片", fontWeight = FontWeight.Bold)
@@ -759,7 +776,9 @@ private fun ManualCardDialog(
             Button(
                 onClick = { onConfirm(question, answer, subject, detail, tags, selectedType, imageUrl, audioUrl, phonetic, example, collocations, etymology, hint, rhyme, derivatives) },
                 enabled = question.isNotBlank() && answer.isNotBlank(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                )
             ) {
                 Text("添加")
             }

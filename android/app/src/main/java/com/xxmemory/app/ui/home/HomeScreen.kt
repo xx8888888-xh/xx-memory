@@ -136,7 +136,7 @@ fun HomeScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    CardCountBadge(totalCards = uiState.totalCards, dueCount = uiState.dueCount, todayReviewed = uiState.todayReviewed)
+                    CardCountBadge(totalCards = uiState.totalCards, dueCount = uiState.dueCount, todayReviewed = uiState.todayReviewed, isEinkMode = isEinkMode)
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
@@ -144,7 +144,8 @@ fun HomeScreen(
                 item {
                     StartReviewButton(
                         dueCount = uiState.dueCount,
-                        onClick = onNavigateToReview
+                        onClick = onNavigateToReview,
+                        isEinkMode = isEinkMode
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -259,16 +260,19 @@ fun HomeScreen(
                         StatCard(
                             title = "今日复习",
                             value = "${statsState.todayReviewed}",
+                            isEinkMode = isEinkMode,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             title = "总复习数",
                             value = "${statsState.totalReviewed}",
+                            isEinkMode = isEinkMode,
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             title = "总卡片数",
                             value = "${statsState.totalCards}",
+                            isEinkMode = isEinkMode,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -351,7 +355,7 @@ private fun GreetingHeader() {
 }
 
 @Composable
-private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int) {
+private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int, isEinkMode: Boolean) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -388,7 +392,7 @@ private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int) {
                 Text(
                     text = todayReviewed.toString(),
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.tertiary,
+                    color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -409,7 +413,7 @@ private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int) {
                 Text(
                     text = dueCount.toString(),
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.secondary,
+                    color = if (isEinkMode) Color.Black else MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
@@ -423,7 +427,7 @@ private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int) {
 }
 
 @Composable
-private fun StartReviewButton(dueCount: Int, onClick: () -> Unit) {
+private fun StartReviewButton(dueCount: Int, onClick: () -> Unit, isEinkMode: Boolean) {
     Button(
         onClick = onClick,
         modifier = Modifier
@@ -431,19 +435,22 @@ private fun StartReviewButton(dueCount: Int, onClick: () -> Unit) {
             .height(56.dp),
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
+            containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+            contentColor = Color.White
         ),
         enabled = dueCount > 0
     ) {
         Icon(
             imageVector = Icons.Filled.PlayArrow,
             contentDescription = null,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(24.dp),
+            tint = Color.White
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = if (dueCount > 0) "开始今日复习 ($dueCount 张卡片)" else "今日复习已完成",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.White
         )
     }
 }
@@ -961,6 +968,7 @@ private fun StreakRing(streakDays: Int, isEinkMode: Boolean) {
 private fun StatCard(
     title: String,
     value: String,
+    isEinkMode: Boolean,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -978,7 +986,7 @@ private fun StatCard(
                 text = value,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
+                color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
             )
             Text(
                 text = title,

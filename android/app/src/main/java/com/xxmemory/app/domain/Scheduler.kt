@@ -21,16 +21,18 @@ import java.util.Calendar
 object Scheduler {
 
     suspend fun scheduleReviewReminder(context: Context) {
-        val startOfDay = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+        val now = System.currentTimeMillis()
+        val endOfDay = Calendar.getInstance().apply {
+            timeInMillis = now
+            set(Calendar.HOUR_OF_DAY, 23)
+            set(Calendar.MINUTE, 59)
+            set(Calendar.SECOND, 59)
+            set(Calendar.MILLISECOND, 999)
         }.timeInMillis
 
         val dueCount = withContext(Dispatchers.IO) {
             val db = AppDatabase.getInstance(context)
-            db.cardDao().getDueCount(startOfDay).first()
+            db.cardDao().getDueCount(endOfDay).first()
         }
 
         if (dueCount > 0 && canPostNotification(context)) {

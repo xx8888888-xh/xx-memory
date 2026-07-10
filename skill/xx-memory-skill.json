@@ -1,6 +1,6 @@
 {
   "skillName": "xx-memory-flashcard-generator",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "targetApp": "xx memory (通用智能记忆助手) Android App",
   "purpose": "Enable any AI agent to generate flashcard files and AI-enriched review content for the xx memory app. The AI reads this skill definition, then produces ready-to-import files (JSON, CSV, TXT, or Markdown) containing well-structured memory cards, or generates distractor options, cloze fill-in-the-blank questions, example sentences, hints, rhymes, derivatives and audio scripts based on existing cards.",
   "whenToUse": [
@@ -147,6 +147,18 @@
       "required": false,
       "default": "",
       "description": "Derivative words or word family for word cards."
+    },
+    "nextReviewDate": {
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "Unix timestamp (milliseconds) of the first scheduled review. Use 0 or a past timestamp to make the card immediately due. If omitted, the card is scheduled from the current time."
+    },
+    "learningStage": {
+      "type": "integer",
+      "required": false,
+      "default": 0,
+      "description": "BBDC-style learning stage. 0 = new (4-option quiz), 1 = options passed (example self-review), 2 = example passed (independent recall), 3 = learned (normal SRS review)."
     }
   },
   "outputFormats": {

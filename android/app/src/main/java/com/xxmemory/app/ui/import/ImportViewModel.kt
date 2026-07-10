@@ -273,7 +273,13 @@ class ImportViewModel : ViewModel() {
             hint = json.get("hint")?.asString ?: "",
             rhyme = json.get("rhyme")?.asString ?: "",
             derivatives = json.get("derivatives")?.asString ?: "",
-            mastered = json.get("mastered")?.asBoolean ?: false
+            mastered = json.get("mastered")?.asBoolean ?: false,
+            nextReviewDate = json.get("nextReviewDate")?.asLong
+                ?: json.get("next_review_date")?.asLong
+                ?: System.currentTimeMillis(),
+            learningStage = json.get("learningStage")?.asInt
+                ?: json.get("learning_stage")?.asInt
+                ?: 0
         )
     }
 

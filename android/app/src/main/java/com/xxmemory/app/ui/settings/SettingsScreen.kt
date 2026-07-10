@@ -4,9 +4,14 @@ import android.content.Intent
 import android.provider.Settings
 import android.widget.Toast
 import com.xxmemory.app.BuildConfig
+import com.xxmemory.app.ui.theme.EinkAlertDialog
 import com.xxmemory.app.ui.theme.EinkFilterChip
+import com.xxmemory.app.ui.theme.EinkSwitch
+import com.xxmemory.app.ui.theme.rememberEinkMode
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -63,6 +68,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -76,6 +82,7 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val isEinkMode = rememberEinkMode()
 
     var showProfileDialog by remember { mutableStateOf(false) }
     var showTimePickerDialog by remember { mutableStateOf(false) }
@@ -101,7 +108,8 @@ fun SettingsScreen(
         ProfileCard(
             userName = uiState.userName,
             userEmail = uiState.userEmail,
-            onClick = { showProfileDialog = true }
+            onClick = { showProfileDialog = true },
+            isEinkMode = isEinkMode
         )
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -120,10 +128,17 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    Switch(
-                        checked = uiState.dailyCardLimitEnabled,
-                        onCheckedChange = { viewModel.toggleDailyCardLimitEnabled(it) }
-                    )
+                    if (isEinkMode) {
+                        EinkSwitch(
+                            checked = uiState.dailyCardLimitEnabled,
+                            onCheckedChange = { viewModel.toggleDailyCardLimitEnabled(it) }
+                        )
+                    } else {
+                        Switch(
+                            checked = uiState.dailyCardLimitEnabled,
+                            onCheckedChange = { viewModel.toggleDailyCardLimitEnabled(it) }
+                        )
+                    }
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -136,18 +151,11 @@ fun SettingsScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Slider(
-                    value = uiState.dailyCardLimit.toFloat(),
-                    onValueChange = { viewModel.setDailyCardLimit(it.toInt()) },
-                    valueRange = 5f..100f,
-                    steps = 18,
+                DailyLimitControl(
                     enabled = uiState.dailyCardLimitEnabled,
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                        disabledThumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                        disabledActiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-                    )
+                    value = uiState.dailyCardLimit,
+                    isEinkMode = isEinkMode,
+                    onValueChange = { viewModel.setDailyCardLimit(it) }
                 )
             }
             Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
@@ -155,6 +163,7 @@ fun SettingsScreen(
                 icon = Icons.Filled.Shuffle,
                 title = "随机顺序复习",
                 checked = uiState.shuffleCards,
+                isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleShuffle(it) }
             )
             Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
@@ -162,6 +171,7 @@ fun SettingsScreen(
                 icon = Icons.Filled.Visibility,
                 title = "先显示详细说明",
                 checked = uiState.showDetailFirst,
+                isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleShowDetailFirst(it) }
             )
         }
@@ -329,12 +339,13 @@ fun SettingsScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 SwitchItem(
-                    icon = Icons.Filled.School,
-                    title = "百词斩深度模式",
-                    subtitle = "详情页展示词根词缀、词组搭配、押韵等完整内容",
-                    checked = uiState.baicizhanDeepMode,
-                    onCheckedChange = { viewModel.toggleBaicizhanDeepMode(it) }
-                )
+                icon = Icons.Filled.School,
+                title = "百词斩深度模式",
+                subtitle = "详情页展示词根词缀、词组搭配、押韵等完整内容",
+                checked = uiState.baicizhanDeepMode,
+                isEinkMode = isEinkMode,
+                onCheckedChange = { viewModel.toggleBaicizhanDeepMode(it) }
+            )
                 if (uiState.reviewMode == "bbdc") {
                     Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
                     SwitchItem(
@@ -342,6 +353,7 @@ fun SettingsScreen(
                         title = "不背单词沉浸刷词",
                         subtitle = "全屏极简界面，自动朗读，专注刷词",
                         checked = uiState.bbdcImmersiveMode,
+                        isEinkMode = isEinkMode,
                         onCheckedChange = { viewModel.toggleBbdcImmersiveMode(it) }
                     )
                 }
@@ -358,6 +370,7 @@ fun SettingsScreen(
                 title = "进入卡片自动朗读",
                 subtitle = "翻到问题面时自动朗读问题文本",
                 checked = uiState.ttsAutoPlayQuestion,
+                isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleTtsAutoPlayQuestion(it) }
             )
             Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
@@ -366,6 +379,7 @@ fun SettingsScreen(
                 title = "揭晓答案自动朗读",
                 subtitle = "显示答案后自动朗读答案文本",
                 checked = uiState.ttsAutoPlayAnswer,
+                isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleTtsAutoPlayAnswer(it) }
             )
         }
@@ -380,6 +394,7 @@ fun SettingsScreen(
                 title = "墨水屏专用模式",
                 subtitle = "移除所有动画，使用黑白极简配色，适合电子墨水屏设备",
                 checked = uiState.einkMode,
+                isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleEinkMode(it) }
             )
             Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
@@ -387,6 +402,7 @@ fun SettingsScreen(
                 icon = Icons.Filled.SpeakerNotes,
                 title = "自动朗读",
                 checked = uiState.autoPlayAudio,
+                isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleAutoPlay(it) }
             )
         }
@@ -401,6 +417,7 @@ fun SettingsScreen(
                 title = "复习提醒",
                 subtitle = "有卡片到期时在指定时间点提醒",
                 checked = uiState.dailyReminder,
+                isEinkMode = isEinkMode,
                 onCheckedChange = {
                     val success = viewModel.toggleDailyReminder(it)
                     if (!success) {
@@ -426,7 +443,7 @@ fun SettingsScreen(
                         Text(
                             text = "${uiState.reminderTimeSlots.size} 个",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -443,7 +460,7 @@ fun SettingsScreen(
                                 Icon(
                                     imageVector = Icons.Filled.AccessTime,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
+                                    tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -460,7 +477,7 @@ fun SettingsScreen(
                                 Icon(
                                     imageVector = Icons.Filled.Close,
                                     contentDescription = "删除",
-                                    tint = MaterialTheme.colorScheme.outline,
+                                    tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.outline,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -470,21 +487,24 @@ fun SettingsScreen(
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
-                            .clickable { showTimePickerDialog = true }
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { showTimePickerDialog = true }
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Add,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "添加提醒时间点",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -500,13 +520,15 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Filled.Info,
                 title = "版本",
-                subtitle = BuildConfig.VERSION_NAME
+                subtitle = BuildConfig.VERSION_NAME,
+                isEinkMode = isEinkMode
             )
             Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SettingsItem(
                 icon = Icons.Filled.AutoAwesome,
                 title = "xx memory",
-                subtitle = "通用智能记忆助手"
+                subtitle = "通用智能记忆助手",
+                isEinkMode = isEinkMode
             )
         }
         Spacer(modifier = Modifier.height(32.dp))
@@ -561,7 +583,7 @@ fun SettingsScreen(
                 { viewModel.dismissPermissionRationale() }
             )
         }
-        AlertDialog(
+        EinkAlertDialog(
             onDismissRequest = { viewModel.dismissPermissionRationale() },
             title = { Text(title, fontWeight = FontWeight.Bold) },
             text = { Text(text) },
@@ -579,7 +601,8 @@ fun SettingsScreen(
 private fun ProfileCard(
     userName: String,
     userEmail: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isEinkMode: Boolean = false
 ) {
     Card(
         modifier = Modifier
@@ -598,13 +621,13 @@ private fun ProfileCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                    .background(if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = userName.take(1),
                     style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.surface,
+                    color = if (isEinkMode) Color.White else MaterialTheme.colorScheme.surface,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -625,7 +648,7 @@ private fun ProfileCard(
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline
+                tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.outline
             )
         }
     }
@@ -641,7 +664,7 @@ private fun ProfileEditDialog(
     var name by remember { mutableStateOf(currentName) }
     var email by remember { mutableStateOf(currentEmail) }
 
-    AlertDialog(
+    EinkAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("编辑个人信息", fontWeight = FontWeight.Bold) },
         text = {
@@ -701,7 +724,7 @@ private fun TimePickerDialog(
     var hour by remember { mutableStateOf(currentHour.toString()) }
     var minute by remember { mutableStateOf(currentMinute.toString().padStart(2, '0')) }
 
-    AlertDialog(
+    EinkAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("设置提醒时间", fontWeight = FontWeight.Bold) },
         text = {
@@ -749,6 +772,81 @@ private fun TimePickerDialog(
 }
 
 @Composable
+private fun DailyLimitControl(
+    enabled: Boolean,
+    value: Int,
+    isEinkMode: Boolean,
+    onValueChange: (Int) -> Unit
+) {
+    if (isEinkMode) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .border(1.dp, if (enabled) Color.Black else Color.Gray, RoundedCornerShape(8.dp))
+                    .background(if (enabled) Color.White else Color(0xFFF5F5F5))
+                    .then(
+                        if (enabled) {
+                            Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onValueChange((value - 5).coerceAtLeast(5)) }
+                        } else Modifier
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("-", style = MaterialTheme.typography.titleMedium, color = if (enabled) Color.Black else Color.Gray)
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "$value 张",
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .border(1.dp, if (enabled) Color.Black else Color.Gray, RoundedCornerShape(8.dp))
+                    .background(if (enabled) Color.White else Color(0xFFF5F5F5))
+                    .then(
+                        if (enabled) {
+                            Modifier.clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) { onValueChange((value + 5).coerceAtMost(100)) }
+                        } else Modifier
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("+", style = MaterialTheme.typography.titleMedium, color = if (enabled) Color.Black else Color.Gray)
+            }
+        }
+    } else {
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.toInt()) },
+            valueRange = 5f..100f,
+            steps = 18,
+            enabled = enabled,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                disabledThumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
+                disabledActiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+            )
+        )
+    }
+}
+
+@Composable
 private fun SectionTitle(title: String) {
     Text(
         text = title,
@@ -774,20 +872,25 @@ private fun SettingsItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String = "",
+    isEinkMode: Boolean = false,
     onClick: () -> Unit = {},
     trailing: @Composable (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onClick
+            )
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -811,7 +914,7 @@ private fun SettingsItem(
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.outline,
+                tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.outline,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -824,19 +927,24 @@ private fun SwitchItem(
     title: String,
     subtitle: String = "",
     checked: Boolean,
+    isEinkMode: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = { onCheckedChange(!checked) }
+            )
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(22.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -854,13 +962,20 @@ private fun SwitchItem(
                 )
             }
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+        if (isEinkMode) {
+            EinkSwitch(
+                checked = checked,
+                onCheckedChange = onCheckedChange
             )
-        )
+        } else {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.primary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            )
+        }
     }
 }

@@ -64,7 +64,7 @@ class HomeViewModel : ViewModel() {
                 val startOfDay = CardRepository.getStartOfDay(now)
                 val endOfDay = CardRepository.getEndOfDay(now)
 
-                val dueCards = repository.getDueCardsList(startOfDay)
+                val dueCards = repository.getDueCardsList(endOfDay)
                 val totalCards = repository.getTotalCardsSync()
                 val todayReviewed = repository.getTodayReviewCount(startOfDay, endOfDay)
                 val subjects = repository.getSubjects().first()

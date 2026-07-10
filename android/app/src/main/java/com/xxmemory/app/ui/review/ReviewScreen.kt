@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -82,6 +81,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.xxmemory.app.data.entity.Card as CardEntity
 import com.xxmemory.app.domain.AudioPlayer
+import com.xxmemory.app.ui.theme.EinkAlertDialog
 import com.xxmemory.app.ui.theme.EinkFilterChip
 import com.xxmemory.app.ui.theme.rememberEinkMode
 import java.util.Locale
@@ -168,7 +168,10 @@ fun ReviewScreen(
     }
 
     if (uiState.isComplete && uiState.cards.isEmpty()) {
-        EmptyReviewState(onReload = { viewModel.loadDueCards() })
+        EmptyReviewState(
+            isEinkMode = isEinkMode,
+            onReload = { viewModel.loadDueCards() }
+        )
         return
     }
 
@@ -216,6 +219,7 @@ fun ReviewScreen(
         if (uiState.isComplete) {
             ReviewCompleteState(
                 completedCount = uiState.completedCount,
+                isEinkMode = isEinkMode,
                 onReload = { viewModel.loadDueCards() }
             )
         } else {
@@ -385,7 +389,7 @@ fun ReviewScreen(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -1180,7 +1184,11 @@ private fun DetailCard(
 
             Divider(
                 modifier = Modifier.padding(vertical = 16.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                color = if (isEinkMode) {
+                    MaterialTheme.colorScheme.outline
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                }
             )
 
             // Answer
@@ -1710,7 +1718,7 @@ private fun SpellingDialog(
     var input by remember { mutableStateOf("") }
     val result = spellingResult ?: SpellingResult.Idle
 
-    AlertDialog(
+    EinkAlertDialog(
         onDismissRequest = { if (result !is SpellingResult.Correct) onCancel() },
         title = { Text("拼写测试", fontWeight = FontWeight.Bold) },
         text = {
@@ -1805,7 +1813,12 @@ private fun SpellingDialog(
         },
         dismissButton = {
             if (result !is SpellingResult.Correct) {
-                TextButton(onClick = onCancel) {
+                TextButton(
+                    onClick = onCancel,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                    )
+                ) {
                     Text("取消")
                 }
             }
@@ -1832,7 +1845,7 @@ private fun LoadingState(isEinkMode: Boolean) {
 }
 
 @Composable
-private fun EmptyReviewState(onReload: () -> Unit) {
+private fun EmptyReviewState(isEinkMode: Boolean, onReload: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -1843,7 +1856,7 @@ private fun EmptyReviewState(onReload: () -> Unit) {
             Icon(
                 imageVector = Icons.Filled.CheckCircle,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(64.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -1864,7 +1877,10 @@ private fun EmptyReviewState(onReload: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
             OutlinedButton(
                 onClick = onReload,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                )
             ) {
                 Icon(Icons.Filled.School, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
@@ -1877,6 +1893,7 @@ private fun EmptyReviewState(onReload: () -> Unit) {
 @Composable
 private fun ReviewCompleteState(
     completedCount: Int,
+    isEinkMode: Boolean,
     onReload: () -> Unit
 ) {
     Box(
@@ -1889,7 +1906,7 @@ private fun ReviewCompleteState(
             Icon(
                 imageVector = Icons.Filled.School,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(64.dp)
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -1908,7 +1925,10 @@ private fun ReviewCompleteState(
             Spacer(modifier = Modifier.height(24.dp))
             OutlinedButton(
                 onClick = onReload,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                )
             ) {
                 Icon(Icons.Filled.School, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))

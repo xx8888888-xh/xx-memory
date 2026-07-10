@@ -114,8 +114,8 @@ class ReviewViewModel : ViewModel() {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
                 val now = System.currentTimeMillis()
-                val startOfDay = CardRepository.getStartOfDay(now)
-                val cards = repository.getDueCardsList(startOfDay)
+                val endOfDay = CardRepository.getEndOfDay(now)
+                val cards = repository.getDueCardsList(endOfDay)
 
                 if (cards.isEmpty()) {
                     _uiState.value = ReviewUiState(
@@ -301,33 +301,47 @@ class ReviewViewModel : ViewModel() {
         val card = state.currentCard ?: return
         val correct = card.answer.trim()
         val selectedCorrect = option.trim() == correct
-        _uiState.value = state.copy(
-            selectedOption = option,
-            isCorrect = selectedCorrect,
-            step = if (selectedCorrect && state.reviewMode == ReviewMode.BBDC) {
-                // BBDC 选对后直接进入下一张（stage 0 -> 1）
-                ReviewStep.DETAIL
-            } else {
-                ReviewStep.DETAIL
-            },
-            showHint = !selectedCorrect || state.showHint,
-            selfAssessment = if (selectedCorrect) SelfAssessment.CORRECT else null,
-            showAnswer = true
-        )
-        if (selectedCorrect && state.reviewMode == ReviewMode.BBDC) {
-            // 直接评估：stage 0 -> 1
-            assessBbdcStage(quality = 3, nextStage = Card.STAGE_OPTIONS_PASSED)
+        val isBbdc = state.reviewMode == ReviewMode.BBDC
+
+        _uiState.value = if (selectedCorrect && isBbdc) {
+            // BBDC 选对后进入例句自评（有例句）或独立回忆（无例句），不立即计分。
+            val hasExample = card.example.isNotBlank()
+            state.copy(
+                selectedOption = option,
+                isCorrect = true,
+                step = if (hasExample) ReviewStep.EXAMPLE_REVIEW else ReviewStep.INDEPENDENT_RECALL,
+                showHint = false,
+                selfAssessment = null,
+                showAnswer = false,
+                currentCard = card.copy(learningStage = Card.STAGE_OPTIONS_PASSED)
+            )
+        } else {
+            state.copy(
+                selectedOption = option,
+                isCorrect = selectedCorrect,
+                step = ReviewStep.DETAIL,
+                showHint = !selectedCorrect || state.showHint,
+                selfAssessment = if (selectedCorrect) SelfAssessment.CORRECT else SelfAssessment.WRONG,
+                showAnswer = true
+            )
         }
     }
 
     /** 不背单词 Stage 1：例句自评。 */
     fun assessExampleReview(clear: Boolean) {
+        val state = _uiState.value
+        val card = state.currentCard ?: return
         if (clear) {
-            // 清晰：进入 stage 2
-            assessBbdcStage(quality = 3, nextStage = Card.STAGE_EXAMPLE_PASSED)
+            // 清晰：进入独立回忆阶段，stage 1 -> 2（尚未计分）
+            _uiState.value = state.copy(
+                step = ReviewStep.INDEPENDENT_RECALL,
+                currentCard = card.copy(learningStage = Card.STAGE_EXAMPLE_PASSED),
+                selfAssessment = null,
+                showAnswer = false
+            )
         } else {
-            // 记错了：保持 stage 1
-            _uiState.value = _uiState.value.copy(
+            // 记错了：保持 stage 1，显示答案并允许提交
+            _uiState.value = state.copy(
                 step = ReviewStep.DETAIL,
                 selfAssessment = SelfAssessment.WRONG,
                 showAnswer = true
@@ -361,7 +375,7 @@ class ReviewViewModel : ViewModel() {
             SelfAssessment.WRONG -> 0
         }
         val nextStage = when (card.learningStage) {
-            Card.STAGE_NEW -> Card.STAGE_NEW
+            Card.STAGE_NEW -> if (assessment == SelfAssessment.CORRECT) Card.STAGE_OPTIONS_PASSED else Card.STAGE_NEW
             Card.STAGE_OPTIONS_PASSED -> if (assessment == SelfAssessment.CORRECT) Card.STAGE_EXAMPLE_PASSED else Card.STAGE_OPTIONS_PASSED
             Card.STAGE_EXAMPLE_PASSED -> if (assessment == SelfAssessment.CORRECT) Card.STAGE_LEARNED else Card.STAGE_OPTIONS_PASSED
             Card.STAGE_LEARNED -> Card.STAGE_LEARNED

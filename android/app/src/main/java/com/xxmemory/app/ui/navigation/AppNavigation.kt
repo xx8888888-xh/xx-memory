@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -104,6 +105,10 @@ fun AppNavigation() {
 private fun BottomNavBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    val isEinkMode = rememberEinkMode()
+
+    val selectedColor = if (isEinkMode) Color.Black else MaterialTheme.colorScheme.primary
+    val unselectedColor = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.onSurfaceVariant
 
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface
@@ -129,10 +134,10 @@ private fun BottomNavBar(navController: NavHostController) {
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    selectedIconColor = selectedColor,
+                    selectedTextColor = selectedColor,
+                    unselectedIconColor = unselectedColor,
+                    unselectedTextColor = unselectedColor
                 )
             )
         }
