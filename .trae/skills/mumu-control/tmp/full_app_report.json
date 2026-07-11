@@ -1,0 +1,116 @@
+[
+  {
+    "name": "导入测试卡片",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B353850>"
+  },
+  {
+    "name": "首页显示",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B352CD0>"
+  },
+  {
+    "name": "首页搜索",
+    "status": "PASS",
+    "note": "输入 abandon",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B360190>"
+  },
+  {
+    "name": "首页下滑统计",
+    "status": "INFO",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B3535D0>"
+  },
+  {
+    "name": "复习页-无模式切换条",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B360250>"
+  },
+  {
+    "name": "复习页-更多菜单入口",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B360250>"
+  },
+  {
+    "name": "复习页-更多菜单展开",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B361010>"
+  },
+  {
+    "name": "单词复习-选择正确选项",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B361590>"
+  },
+  {
+    "name": "单词复习-例句自评",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B360E90>"
+  },
+  {
+    "name": "单词复习-独立回忆",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B3626D0>"
+  },
+  {
+    "name": "单词复习-提交自评",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B362C50>"
+  },
+  {
+    "name": "单词复习-拼写检查",
+    "status": "PASS",
+    "note": "自动进入拼写检查",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B361A90>"
+  },
+  {
+    "name": "单词复习-拼写提交",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B3631D0>"
+  },
+  {
+    "name": "古诗文复习-进入",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B363750>"
+  },
+  {
+    "name": "古诗文复习-开始默写",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B363D50>"
+  },
+  {
+    "name": "古诗文复习-默写提交",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B36C410>"
+  },
+  {
+    "name": "设置页",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B363E90>"
+  },
+  {
+    "name": "设置-每日卡片限制",
+    "status": "PASS",
+    "note": "改为15",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B363A90>"
+  },
+  {
+    "name": "设置-返回首页",
+    "status": "PASS",
+    "note": "",
+    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x2263B361590>"
+  }
+]

@@ -123,7 +123,13 @@ fun ReviewScreen(
             ReviewStep.EXAMPLE_REVIEW,
             ReviewStep.INDEPENDENT_RECALL,
             ReviewStep.SELF_ASSESSMENT,
-            ReviewStep.DICTATION,
+            ReviewStep.DICTATION -> {
+                if (card.cardType == CardEntity.TYPE_POETRY && settings.poetryRecitationEnabled && hasAudio) {
+                    audioPlayer.play(card.audioUrl, card.question)
+                } else if (settings.ttsAutoPlayQuestion && hasAudio) {
+                    audioPlayer.play(card.audioUrl, card.question)
+                }
+            }
             ReviewStep.FILL_BLANK -> {
                 if (settings.ttsAutoPlayQuestion && hasAudio) {
                     audioPlayer.play(card.audioUrl, card.question)
