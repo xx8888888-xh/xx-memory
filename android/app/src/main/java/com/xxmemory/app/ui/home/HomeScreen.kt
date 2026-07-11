@@ -1,5 +1,6 @@
 package com.xxmemory.app.ui.home
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,7 +26,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -35,6 +38,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -62,6 +68,7 @@ import com.xxmemory.app.ui.statistics.StatisticsViewModel
 import com.xxmemory.app.ui.statistics.StatisticsUiState
 import com.xxmemory.app.ui.statistics.WeeklyDayStat
 import com.xxmemory.app.ui.statistics.SubjectMastery
+import com.xxmemory.app.ui.theme.EinkAlertDialog
 import com.xxmemory.app.ui.theme.EinkFilterChip
 import com.xxmemory.app.ui.theme.rememberEinkMode
 import java.text.SimpleDateFormat
@@ -105,7 +112,7 @@ fun HomeScreen(
                     Text(
                         text = "加载中...",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = Color.DarkGray
                     )
                 } else {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -137,6 +144,12 @@ fun HomeScreen(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     CardCountBadge(totalCards = uiState.totalCards, dueCount = uiState.dueCount, todayReviewed = uiState.todayReviewed, isEinkMode = isEinkMode)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SearchBar(
+                        query = uiState.searchQuery,
+                        onQueryChange = { viewModel.updateSearchQuery(it) },
+                        isEinkMode = isEinkMode
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
@@ -228,7 +241,12 @@ fun HomeScreen(
                     }
                 } else {
                     items(filteredCards) { card ->
-                        DueCardItem(card = card, isEinkMode = isEinkMode, onCardClick = onNavigateToReview)
+                        DueCardItem(
+                            card = card,
+                            isEinkMode = isEinkMode,
+                            onCardClick = onNavigateToReview,
+                            onEditCard = { viewModel.startEditCard(card) }
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
@@ -319,6 +337,14 @@ fun HomeScreen(
                     viewModel.selectCalendarDay(null)
                 },
                 isEinkMode = isEinkMode
+            )
+        }
+
+        uiState.editingCard?.let { card ->
+            CardEditDialog(
+                card = card,
+                onDismiss = { viewModel.dismissEditDialog() },
+                onSave = { viewModel.updateCard(it) }
             )
         }
     }
@@ -477,19 +503,12 @@ private fun ProgressSection(todayReviewed: Int, dueCount: Int, isEinkMode: Boole
                     todayReviewed.toFloat() / (todayReviewed + dueCount)
                 } else 0f
                 if (isEinkMode) {
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .border(6.dp, MaterialTheme.colorScheme.onSurface, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "${(progress * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        text = "${(progress * 100).toInt()}%",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
                 } else {
                     CircularProgressIndicator(
                         progress = progress,
@@ -760,7 +779,7 @@ private fun CalendarDayCell(
             .background(bgColor, RoundedCornerShape(4.dp))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = null,
+                indication = if (isEinkMode) null else LocalIndication.current,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
@@ -834,7 +853,12 @@ private fun cardTypeLabel(cardType: String): String = when (cardType) {
 }
 
 @Composable
-private fun DueCardItem(card: Card, isEinkMode: Boolean, onCardClick: () -> Unit = {}) {
+private fun DueCardItem(
+    card: Card,
+    isEinkMode: Boolean,
+    onCardClick: () -> Unit = {},
+    onEditCard: () -> Unit = {}
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -885,6 +909,13 @@ private fun DueCardItem(card: Card, isEinkMode: Boolean, onCardClick: () -> Unit
                     color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
                 )
             }
+            IconButton(onClick = onEditCard) {
+                Icon(
+                    imageVector = Icons.Filled.Edit,
+                    contentDescription = "编辑",
+                    tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                )
+            }
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
@@ -915,19 +946,12 @@ private fun StreakRing(streakDays: Int, isEinkMode: Boolean) {
                 contentAlignment = Alignment.Center
             ) {
                 if (isEinkMode) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .border(4.dp, MaterialTheme.colorScheme.onSurface, CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "$streakDays",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
+                    Text(
+                        text = "$streakDays" + "天",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold
+                    )
                 } else {
                     val progress = ((streakDays % 7).coerceAtLeast(0) / 7f).let { if (it == 0f && streakDays > 0) 1f else it }
                     CircularProgressIndicator(
@@ -1095,4 +1119,87 @@ private fun SubjectMasteryBar(subject: SubjectMastery, isEinkMode: Boolean) {
             }
         }
     }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    isEinkMode: Boolean
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier.fillMaxWidth(),
+        placeholder = { Text("搜索卡片...") },
+        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        shape = RoundedCornerShape(24.dp),
+        singleLine = true,
+        colors = if (isEinkMode) {
+            OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.DarkGray,
+                cursorColor = Color.Black
+            )
+        } else {
+            OutlinedTextFieldDefaults.colors()
+        }
+    )
+}
+
+@Composable
+private fun CardEditDialog(
+    card: Card,
+    onDismiss: () -> Unit,
+    onSave: (Card) -> Unit
+) {
+    var question by remember { mutableStateOf(card.question) }
+    var answer by remember { mutableStateOf(card.answer) }
+    var detail by remember { mutableStateOf(card.detail) }
+    var hint by remember { mutableStateOf(card.hint) }
+
+    EinkAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("编辑卡片") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = question,
+                    onValueChange = { question = it },
+                    label = { Text("问题") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = answer,
+                    onValueChange = { answer = it },
+                    label = { Text("答案") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = detail,
+                    onValueChange = { detail = it },
+                    label = { Text("详情") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = hint,
+                    onValueChange = { hint = it },
+                    label = { Text("提示") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onSave(card.copy(question = question, answer = answer, detail = detail, hint = hint))
+            }) { Text("保存") }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
 }

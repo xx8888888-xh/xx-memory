@@ -25,6 +25,8 @@ data class HomeUiState(
     val calendarMonthDays: List<CalendarDayStat> = emptyList(),
     val selectedCalendarDay: Long? = null,
     val selectedDayCards: List<Card> = emptyList(),
+    val searchQuery: String = "",
+    val editingCard: Card? = null,
     val isLoading: Boolean = true
 )
 
@@ -187,12 +189,48 @@ class HomeViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(selectedSubject = subject)
     }
 
+    fun updateSearchQuery(query: String) {
+        _uiState.value = _uiState.value.copy(searchQuery = query)
+    }
+
     fun getFilteredCards(): List<Card> {
         val state = _uiState.value
-        return if (state.selectedSubject != null) {
+        var cards = if (state.selectedSubject != null) {
             state.dueCards.filter { it.subject == state.selectedSubject }
         } else {
             state.dueCards
         }
+        if (state.searchQuery.isNotBlank()) {
+            val q = state.searchQuery.trim()
+            cards = cards.filter {
+                it.question.contains(q, ignoreCase = true) ||
+                it.answer.contains(q, ignoreCase = true) ||
+                it.subject.contains(q, ignoreCase = true) ||
+                it.tags.contains(q, ignoreCase = true) ||
+                it.detail.contains(q, ignoreCase = true) ||
+                it.hint.contains(q, ignoreCase = true)
+            }
+        }
+        return cards
+    }
+
+    fun updateCard(card: Card) {
+        viewModelScope.launch {
+            try {
+                repository.updateCard(card)
+                loadData()
+                _uiState.value = _uiState.value.copy(editingCard = null)
+            } catch (e: Exception) {
+                Log.e("HomeViewModel", "updateCard failed", e)
+            }
+        }
+    }
+
+    fun startEditCard(card: Card) {
+        _uiState.value = _uiState.value.copy(editingCard = card)
+    }
+
+    fun dismissEditDialog() {
+        _uiState.value = _uiState.value.copy(editingCard = null)
     }
 }

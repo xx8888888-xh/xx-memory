@@ -299,16 +299,32 @@ fun ReviewScreen(
                         }
                     )
 
-                    ReviewStep.OPTIONS -> OptionsCard(
-                        card = card,
-                        options = uiState.options,
-                        selectedOption = uiState.selectedOption,
-                        isEinkMode = isEinkMode,
-                        showImage = showImageInQuestion,
-                        tts = tts,
-                        ttsReady = ttsReady,
-                        onSelect = { viewModel.selectOption(it) }
-                    )
+                    ReviewStep.OPTIONS -> Column(modifier = Modifier.fillMaxSize()) {
+                        if (uiState.wrongAttempts > 0 && uiState.isCorrect == false) {
+                            Text(
+                                text = "选错了，再试一次",
+                                color = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            OptionsCard(
+                                card = card,
+                                options = uiState.options,
+                                selectedOption = uiState.selectedOption,
+                                isEinkMode = isEinkMode,
+                                showImage = showImageInQuestion,
+                                tts = tts,
+                                ttsReady = ttsReady,
+                                onSelect = { viewModel.selectOption(it) }
+                            )
+                        }
+                    }
 
                     ReviewStep.EXAMPLE_REVIEW,
                     ReviewStep.INDEPENDENT_RECALL,

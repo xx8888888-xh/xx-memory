@@ -185,6 +185,9 @@ class SettingsViewModel : ViewModel() {
     fun setStudyMode(mode: String) {
         settingsManager.studyMode = mode
         _uiState.value = _uiState.value.copy(studyMode = mode)
+        if (settingsManager.dailyReminder) {
+            NotificationScheduler.rescheduleReminders(XxMemoryApplication.instance)
+        }
     }
 
     /**
@@ -200,6 +203,9 @@ class SettingsViewModel : ViewModel() {
         }
         settingsManager.focusedTimeSlots = parsed.joinToString(",")
         _uiState.value = _uiState.value.copy(focusedTimeSlots = parsed.joinToString(","))
+        if (settingsManager.dailyReminder && settingsManager.studyMode == "focused") {
+            NotificationScheduler.rescheduleReminders(XxMemoryApplication.instance)
+        }
         return true
     }
 

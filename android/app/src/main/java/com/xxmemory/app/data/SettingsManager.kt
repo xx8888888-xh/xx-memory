@@ -112,4 +112,9 @@ class SettingsManager(context: Context) {
     var defaultCardsImported: Boolean
         get() = prefs.getBoolean("default_cards_imported", false)
         set(value) = prefs.edit().putBoolean("default_cards_imported", value).apply()
+
+    /** 首次启动是否已显示引导页。*/
+    var onboardingCompleted: Boolean
+        get() = prefs.getBoolean("onboarding_completed", false)
+        set(value) = prefs.edit().putBoolean("onboarding_completed", value).apply()
 }

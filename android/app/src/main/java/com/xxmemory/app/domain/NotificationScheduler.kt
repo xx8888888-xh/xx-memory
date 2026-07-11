@@ -37,7 +37,12 @@ object NotificationScheduler {
             }
         }
 
-        val slots = parseTimeSlots(settings.reminderTimeSlots)
+        val slotsStr = if (settings.studyMode == "focused") {
+            settings.focusedTimeSlots
+        } else {
+            settings.reminderTimeSlots
+        }
+        val slots = parseTimeSlots(slotsStr)
         if (slots.isEmpty()) {
             Log.w(TAG, "No valid reminder time slots")
             return false
@@ -83,12 +88,16 @@ object NotificationScheduler {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val app = context.applicationContext as XxMemoryApplication
         val settings = app.settingsManager
-        val slots = parseTimeSlots(settings.reminderTimeSlots)
-        if (slots.isEmpty()) {
+        // Cancel based on the larger of the two slot lists so previously
+        // scheduled alarms are cleared regardless of which mode was active.
+        val reminderSlots = parseTimeSlots(settings.reminderTimeSlots)
+        val focusedSlots = parseTimeSlots(settings.focusedTimeSlots)
+        val maxCount = maxOf(reminderSlots.size, focusedSlots.size)
+        if (maxCount == 0) {
             Log.d(TAG, "No reminders to cancel")
             return
         }
-        slots.forEachIndexed { index, _ ->
+        for (index in 0 until maxCount) {
             val intent = Intent(context, AlarmReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
                 context,

@@ -84,7 +84,8 @@ data class ReviewUiState(
     val dictationInput: String = "",
     val dictationResult: SpellingResult? = null,
     val fillBlankInput: String = "",
-    val fillBlankResult: SpellingResult? = null
+    val fillBlankResult: SpellingResult? = null,
+    val wrongAttempts: Int = 0  // BBDC 模式下当前卡片选错次数
 )
 
 sealed class SpellingResult {
@@ -216,7 +217,8 @@ class ReviewViewModel : ViewModel() {
             dictationInput = "",
             dictationResult = null,
             fillBlankInput = "",
-            fillBlankResult = null
+            fillBlankResult = null,
+            wrongAttempts = 0
         )
     }
 
@@ -305,6 +307,7 @@ class ReviewViewModel : ViewModel() {
 
         _uiState.value = if (selectedCorrect && isBbdc) {
             // BBDC 选对后进入例句自评（有例句）或独立回忆（无例句），不立即计分。
+            // 注意：不重置 wrongAttempts，保留到 assessBbdcStage 用于 quality 降级。
             val hasExample = card.example.isNotBlank()
             state.copy(
                 selectedOption = option,
@@ -314,6 +317,15 @@ class ReviewViewModel : ViewModel() {
                 selfAssessment = null,
                 showAnswer = false,
                 currentCard = card.copy(learningStage = Card.STAGE_OPTIONS_PASSED)
+            )
+        } else if (!selectedCorrect && isBbdc) {
+            // BBDC 选错：保持 OPTIONS 步骤，增加错误计数，不进入 DETAIL，允许重试
+            state.copy(
+                selectedOption = option,
+                isCorrect = false,
+                step = ReviewStep.OPTIONS,
+                wrongAttempts = state.wrongAttempts + 1,
+                showHint = true
             )
         } else {
             state.copy(
@@ -392,9 +404,12 @@ class ReviewViewModel : ViewModel() {
                 val card = state.currentCard ?: return@launch
                 val learningStartedAt = if (card.learningStartedAt == 0L) System.currentTimeMillis() else card.learningStartedAt
 
+                // BBDC OPTIONS 阶段选错重试：有错误尝试时降级 quality（最多 2）
+                val effectiveQuality = if (state.wrongAttempts >= 1) quality.coerceAtMost(2) else quality
+
                 val algorithm = EbbinghausAlgorithm.getAlgorithm(settingsManager.algorithmType)
                 val result = algorithm.calculate(
-                    quality = quality,
+                    quality = effectiveQuality,
                     repetitions = card.repetitions,
                     easeFactor = card.easeFactor,
                     currentInterval = card.interval
@@ -415,7 +430,7 @@ class ReviewViewModel : ViewModel() {
 
                 val log = ReviewLog(
                     cardId = card.id,
-                    quality = quality,
+                    quality = effectiveQuality,
                     reviewDate = System.currentTimeMillis(),
                     nextInterval = result.nextInterval
                 )
@@ -536,7 +551,8 @@ class ReviewViewModel : ViewModel() {
                 dictationInput = "",
                 dictationResult = null,
                 fillBlankInput = "",
-                fillBlankResult = null
+                fillBlankResult = null,
+                wrongAttempts = 0
             )
         } else {
             val nextCard = state.cards[nextIndex]
@@ -562,7 +578,8 @@ class ReviewViewModel : ViewModel() {
                 dictationInput = "",
                 dictationResult = null,
                 fillBlankInput = "",
-                fillBlankResult = null
+                fillBlankResult = null,
+                wrongAttempts = 0
             )
         }
     }
