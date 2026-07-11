@@ -107,4 +107,9 @@ class SettingsManager(context: Context) {
     var ttsAutoPlayAnswer: Boolean
         get() = prefs.getBoolean("tts_auto_play_answer", true)
         set(value) = prefs.edit().putBoolean("tts_auto_play_answer", value).apply()
+
+    /** 是否已导入过默认卡片（首次启动时自动导入）。 */
+    var defaultCardsImported: Boolean
+        get() = prefs.getBoolean("default_cards_imported", false)
+        set(value) = prefs.edit().putBoolean("default_cards_imported", value).apply()
 }
