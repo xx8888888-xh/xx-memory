@@ -117,4 +117,9 @@ class SettingsManager(context: Context) {
     var onboardingCompleted: Boolean
         get() = prefs.getBoolean("onboarding_completed", false)
         set(value) = prefs.edit().putBoolean("onboarding_completed", value).apply()
+
+    /** 古诗文复习是否启用朗诵阶段。关闭后直接进入默写。 */
+    var poetryRecitationEnabled: Boolean
+        get() = prefs.getBoolean("poetry_recitation_enabled", true)
+        set(value) = prefs.edit().putBoolean("poetry_recitation_enabled", value).apply()
 }

@@ -35,6 +35,7 @@ data class SettingsUiState(
     val focusedTimeSlots: String = "08:00,12:00,20:00",
     val ttsAutoPlayQuestion: Boolean = false,
     val ttsAutoPlayAnswer: Boolean = true,
+    val poetryRecitationEnabled: Boolean = true,
     val permissionRationale: String? = null
 )
 
@@ -67,7 +68,8 @@ class SettingsViewModel : ViewModel() {
             studyMode = settingsManager.studyMode,
             focusedTimeSlots = settingsManager.focusedTimeSlots,
             ttsAutoPlayQuestion = settingsManager.ttsAutoPlayQuestion,
-            ttsAutoPlayAnswer = settingsManager.ttsAutoPlayAnswer
+            ttsAutoPlayAnswer = settingsManager.ttsAutoPlayAnswer,
+            poetryRecitationEnabled = settingsManager.poetryRecitationEnabled
         )
     }
 
@@ -151,6 +153,11 @@ class SettingsViewModel : ViewModel() {
         _uiState.value = _uiState.value.copy(ttsAutoPlayAnswer = enabled)
     }
 
+    fun togglePoetryRecitation(enabled: Boolean) {
+        settingsManager.poetryRecitationEnabled = enabled
+        _uiState.value = _uiState.value.copy(poetryRecitationEnabled = enabled)
+    }
+
     fun toggleShuffle(enabled: Boolean) {
         settingsManager.shuffleCards = enabled
         _uiState.value = _uiState.value.copy(shuffleCards = enabled)
@@ -162,9 +169,9 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun setDailyCardLimit(limit: Int) {
-        val clamped = limit.coerceIn(5, 100)
-        settingsManager.dailyCardLimit = clamped
-        _uiState.value = _uiState.value.copy(dailyCardLimit = clamped)
+        val coerced = limit.coerceIn(1, 200)
+        settingsManager.dailyCardLimit = coerced
+        _uiState.value = _uiState.value.copy(dailyCardLimit = coerced)
     }
 
     fun toggleDailyCardLimitEnabled(enabled: Boolean) {
@@ -242,6 +249,27 @@ class SettingsViewModel : ViewModel() {
                 NotificationScheduler.rescheduleReminders(XxMemoryApplication.instance)
             }
         }
+    }
+
+    /**
+     * 向集中模式时间点添加一个时间点，返回是否成功（格式合法且持久化）。
+     */
+    fun addFocusedSlot(hour: Int, minute: Int): Boolean {
+        val slot = "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+        val current = SchedulerUtils.parseFocusedSlots(settingsManager.focusedTimeSlots).toMutableList()
+        if (slot in current) return true
+        current.add(slot)
+        current.sort()
+        return setFocusedTimeSlots(current.joinToString(","))
+    }
+
+    /**
+     * 从集中模式时间点移除一个时间点，返回是否成功（格式合法且持久化）。
+     */
+    fun removeFocusedSlot(slot: String): Boolean {
+        val current = SchedulerUtils.parseFocusedSlots(settingsManager.focusedTimeSlots).toMutableList()
+        if (!current.remove(slot)) return true
+        return setFocusedTimeSlots(current.joinToString(","))
     }
 
     fun setUserName(name: String) {

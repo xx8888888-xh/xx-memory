@@ -84,6 +84,9 @@ class CardRepository(
     suspend fun getDueCountBetween(start: Long, end: Long): Int =
         cardDao.getDueCountBetween(start, end)
 
+    suspend fun getDueCountByTypeSync(today: Long, type: String): Int =
+        cardDao.getDueCountByTypeSync(today, type)
+
     companion object {
         fun getStartOfDay(timestamp: Long): Long {
             val cal = Calendar.getInstance()

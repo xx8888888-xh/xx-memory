@@ -19,4 +19,6 @@
     <string name="notification_channel_desc">艾宾浩斯遗忘曲线复习提醒</string>
     <string name="notification_title">xx memory</string>
     <string name="notification_text">您有 %d 张卡片需要复习</string>
+    <string name="notification_poetry_title">古诗文复习提醒</string>
+    <string name="notification_poetry_text">今日有 %d 篇古诗文待复习，点击开始默写</string>
 </resources>

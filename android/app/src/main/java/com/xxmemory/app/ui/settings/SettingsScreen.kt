@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
@@ -38,6 +39,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SpeakerNotes
@@ -52,6 +54,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -71,6 +74,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.domain.SchedulerUtils
@@ -349,26 +353,26 @@ fun SettingsScreen(
                 if (uiState.reviewMode == "bbdc") {
                     Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
                     SwitchItem(
-                        icon = Icons.Filled.AutoStories,
-                        title = "不背单词沉浸刷词",
-                        subtitle = "全屏极简界面，自动朗读，专注刷词",
-                        checked = uiState.bbdcImmersiveMode,
-                        isEinkMode = isEinkMode,
-                        onCheckedChange = { viewModel.toggleBbdcImmersiveMode(it) }
-                    )
+                    icon = Icons.Filled.AutoStories,
+                    title = "不背单词沉浸刷词",
+                    subtitle = "全屏极简界面，专注刷词",
+                    checked = uiState.bbdcImmersiveMode,
+                    isEinkMode = isEinkMode,
+                    onCheckedChange = { viewModel.toggleBbdcImmersiveMode(it) }
+                )
                 }
             }
         }
         Spacer(modifier = Modifier.height(20.dp))
 
-        // TTS section
+        // TTS section — 已改为仅自动播放用户上传的音频，不会自动 TTS 朗读内容。
         SectionTitle("朗读")
         Spacer(modifier = Modifier.height(8.dp))
         SettingsCard {
             SwitchItem(
                 icon = Icons.Filled.VolumeUp,
-                title = "进入卡片自动朗读",
-                subtitle = "翻到问题面时自动朗读问题文本",
+                title = "进入卡片自动播放音频",
+                subtitle = "翻到问题面时，自动播放用户上传的音频",
                 checked = uiState.ttsAutoPlayQuestion,
                 isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleTtsAutoPlayQuestion(it) }
@@ -376,8 +380,8 @@ fun SettingsScreen(
             Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.VolumeUp,
-                title = "揭晓答案自动朗读",
-                subtitle = "显示答案后自动朗读答案文本",
+                title = "揭晓答案自动播放音频",
+                subtitle = "显示答案后，自动播放用户上传的音频",
                 checked = uiState.ttsAutoPlayAnswer,
                 isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleTtsAutoPlayAnswer(it) }
@@ -400,7 +404,8 @@ fun SettingsScreen(
             Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(
                 icon = Icons.Filled.SpeakerNotes,
-                title = "自动朗读",
+                title = "自动播放音频",
+                subtitle = "仅播放用户上传的音频，不会自动朗读内容",
                 checked = uiState.autoPlayAudio,
                 isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleAutoPlay(it) }
@@ -430,7 +435,13 @@ fun SettingsScreen(
                 Column(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    if (uiState.studyMode == "focused") {
+                    val isFocusedMode = uiState.studyMode == "focused"
+                    val activeSlots = if (isFocusedMode) {
+                        SchedulerUtils.parseFocusedSlots(uiState.focusedTimeSlots)
+                    } else {
+                        uiState.reminderTimeSlots
+                    }
+                    if (isFocusedMode) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -462,14 +473,14 @@ fun SettingsScreen(
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "${uiState.reminderTimeSlots.size} 个",
+                            text = "${activeSlots.size} 个",
                             style = MaterialTheme.typography.bodySmall,
                             color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    uiState.reminderTimeSlots.forEach { slot ->
+                    activeSlots.forEach { slot ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -492,7 +503,13 @@ fun SettingsScreen(
                                 )
                             }
                             IconButton(
-                                onClick = { viewModel.removeReminderSlot(slot) },
+                                onClick = {
+                                    if (isFocusedMode) {
+                                        viewModel.removeFocusedSlot(slot)
+                                    } else {
+                                        viewModel.removeReminderSlot(slot)
+                                    }
+                                },
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
@@ -531,6 +548,21 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Poetry section
+        SectionTitle("古诗文复习")
+        Spacer(modifier = Modifier.height(8.dp))
+        SettingsCard {
+            SwitchItem(
+                icon = Icons.Filled.RecordVoiceOver,
+                title = "启用朗诵阶段",
+                subtitle = "关闭后古诗文卡片直接进入默写",
+                checked = uiState.poetryRecitationEnabled,
+                isEinkMode = isEinkMode,
+                onCheckedChange = { viewModel.togglePoetryRecitation(it) }
+            )
         }
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -574,7 +606,11 @@ fun SettingsScreen(
             currentMinute = 0,
             onDismiss = { showTimePickerDialog = false },
             onConfirm = { hour, minute ->
-                viewModel.addReminderSlot(hour, minute)
+                if (uiState.studyMode == "focused") {
+                    viewModel.addFocusedSlot(hour, minute)
+                } else {
+                    viewModel.addReminderSlot(hour, minute)
+                }
                 showTimePickerDialog = false
             }
         )
@@ -799,72 +835,42 @@ private fun DailyLimitControl(
     isEinkMode: Boolean,
     onValueChange: (Int) -> Unit
 ) {
-    if (isEinkMode) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(1.dp, if (enabled) Color.Black else Color.Gray, RoundedCornerShape(8.dp))
-                    .background(if (enabled) Color.White else Color(0xFFF5F5F5))
-                    .then(
-                        if (enabled) {
-                            Modifier.clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onValueChange((value - 5).coerceAtLeast(5)) }
-                        } else Modifier
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("-", style = MaterialTheme.typography.titleMedium, color = if (enabled) Color.Black else Color.Gray)
+    var text by remember(value) { mutableStateOf(value.toString()) }
+    OutlinedTextField(
+        value = text,
+        onValueChange = { newText ->
+            if (newText.isBlank()) {
+                text = value.toString()
+                return@OutlinedTextField
             }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "$value 张",
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold
+            val filtered = newText.filter { it.isDigit() }.take(3)
+            text = filtered
+            val parsed = filtered.toIntOrNull()
+            if (parsed != null) {
+                val coerced = parsed.coerceIn(1, 200)
+                if (coerced != parsed) {
+                    text = coerced.toString()
+                }
+                onValueChange(coerced)
+            }
+        },
+        label = { Text("每日卡片限制") },
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth(),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true,
+        shape = RoundedCornerShape(12.dp),
+        colors = if (isEinkMode) {
+            OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.Black,
+                unfocusedBorderColor = Color.DarkGray,
+                disabledBorderColor = Color.Gray,
+                disabledTextColor = Color.Gray
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(1.dp, if (enabled) Color.Black else Color.Gray, RoundedCornerShape(8.dp))
-                    .background(if (enabled) Color.White else Color(0xFFF5F5F5))
-                    .then(
-                        if (enabled) {
-                            Modifier.clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) { onValueChange((value + 5).coerceAtMost(100)) }
-                        } else Modifier
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("+", style = MaterialTheme.typography.titleMedium, color = if (enabled) Color.Black else Color.Gray)
-            }
+        } else {
+            OutlinedTextFieldDefaults.colors()
         }
-    } else {
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onValueChange(it.toInt()) },
-            valueRange = 5f..100f,
-            steps = 18,
-            enabled = enabled,
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                disabledThumbColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f),
-                disabledActiveTrackColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-            )
-        )
-    }
+    )
 }
 
 @Composable

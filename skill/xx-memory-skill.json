@@ -33,6 +33,20 @@
       "recommendedFields": ["audioUrl"],
       "example": { "cardType": "dictation", "question": "静夜思", "answer": "床前明月光，疑是地上霜。举头望明月，低头思故乡。", "audioUrl": "https://example.com/jingyesi.mp3" }
     },
+    "vocabulary": {
+      "name": "单词 (Vocabulary)",
+      "description": "单词类型卡片。使用统一的三遍背诵法：四选一选择测验 → 例句自评 → 独立回忆 → 拼写检查。",
+      "requiredFields": ["question", "answer"],
+      "recommendedFields": ["phonetic", "example", "collocations", "etymology", "hint", "rhyme", "derivatives"],
+      "example": { "cardType": "vocabulary", "question": "abandon", "answer": "放弃，遗弃", "phonetic": "/əˈbændən/", "example": "He abandoned his car in the snow." }
+    },
+    "poetry": {
+      "name": "古诗文 (Poetry / Classical Chinese)",
+      "description": "古诗文类型卡片。使用朗诵+默写背诵法：先朗诵全文 → 听音频对照 → 默写全文。",
+      "requiredFields": ["question", "answer"],
+      "recommendedFields": ["hint", "audioUrl"],
+      "example": { "cardType": "poetry", "question": "静夜思", "answer": "床前明月光，疑是地上霜。举头望明月，低头思故乡。", "audioUrl": "https://example.com/jingyesi.mp3" }
+    },
     "code": {
       "name": "代码 (Code)",
       "description": "Programming card. Place the code problem / prompt in question and the code (optionally with explanation) in answer. Preserve indentation and newlines exactly.",
@@ -78,7 +92,7 @@
     "cardType": {
       "type": "string",
       "required": true,
-      "enum": ["qa", "fill_blank", "dictation", "code", "image", "audio"],
+      "enum": ["qa", "fill_blank", "dictation", "code", "image", "audio", "vocabulary", "poetry"],
       "default": "qa",
       "description": "Determines how the card is rendered and reviewed. Must be one of the supported card types."
     },
@@ -148,6 +162,12 @@
       "default": "",
       "description": "Derivative words or word family for word cards."
     },
+    "distractors": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Comma-separated list of 3 plausible wrong answers for vocabulary four-option quizzes. The app will use these first; if absent it falls back to the card pool."
+    },
     "nextReviewDate": {
       "type": "integer",
       "required": false,
@@ -159,6 +179,20 @@
       "required": false,
       "default": 0,
       "description": "BBDC-style learning stage. 0 = new (4-option quiz), 1 = options passed (example self-review), 2 = example passed (independent recall), 3 = learned (normal SRS review)."
+    }
+  },
+  "contentTypeHints": {
+    "vocabulary": {
+      "name": "单词类型",
+      "description": "英语/外语单词卡片，使用统一单词背诵法：四选一 → 例句自评 → 独立回忆 → 拼写检查。",
+      "requiredFields": ["question", "answer"],
+      "recommendedFields": ["phonetic", "example", "collocations", "etymology", "hint", "rhyme", "derivatives", "distractors"]
+    },
+    "poetry": {
+      "name": "古诗文类型",
+      "description": "古诗词/文言文卡片，使用朗诵+默写背诵法：先朗诵全文 → 听音频 → 默写全文。",
+      "requiredFields": ["question", "answer"],
+      "recommendedFields": ["hint", "audioUrl"]
     }
   },
   "outputFormats": {
@@ -201,7 +235,7 @@
           "answer": "床前明月光，疑是地上霜。举头望明月，低头思故乡。",
           "subject": "古诗词",
           "detail": "李白《静夜思》",
-          "cardType": "dictation",
+          "cardType": "poetry",
           "tags": "poem,tang,recitation",
           "imageUrl": "",
           "audioUrl": "https://example.com/jingyesi.mp3",
@@ -231,7 +265,7 @@
         "The block MUST start with a Q: line containing the question.",
         "The block MUST contain an A: line containing the answer.",
         "Optional metadata lines (any order, after Q:/A:) begin with one of: Subject:, Detail:, CardType:, Tags:, ImageUrl:, AudioUrl:, Favorite:, Phonetic:, Example:, Collocations:, Etymology:, Hint:, Rhyme:, Derivatives:.",
-        "CardType defaults to qa if omitted. Allowed values: qa, fill_blank, dictation, code, image, audio.",
+        "CardType defaults to qa if omitted. Allowed values: qa, fill_blank, dictation, code, image, audio, vocabulary, poetry.",
         "Favorite: line accepts true or false (case-insensitive); defaults to false.",
         "Tags: is a comma-separated list on a single line.",
         "For multi-line code answers, indent continuation lines with 4 spaces, or wrap the entire answer following A: on subsequent indented lines.",
@@ -264,7 +298,7 @@
         "Immediately under the heading, the answer MUST appear as a paragraph prefixed with '**Answer:** ' (or a line starting with 'Answer: ').",
         "Optional detail follows as a paragraph prefixed with '**Detail:** '.",
         "App metadata uses heading-comments / list lines beginning with '# Tags:', '# CardType:', '# Subject:', '# ImageUrl:', '# AudioUrl:', '# Favorite:', '# Phonetic:', '# Example:', '# Collocations:', '# Etymology:', '# Hint:', '# Rhyme:', '# Derivatives:'.",
-        "CardType defaults to qa. Allowed: qa, fill_blank, dictation, code, image, audio.",
+        "CardType defaults to qa. Allowed: qa, fill_blank, dictation, code, image, audio, vocabulary, poetry.",
         "Favorite accepts true / false; defaults to false.",
         "Code answers SHOULD use a fenced code block (```), preserving indentation.",
         "Separate cards with a horizontal rule (---) or a blank line plus the next '## ' heading.",
@@ -346,6 +380,24 @@
         "Add brief timing hints [pause] only where natural breaks occur.",
         "Do not modernize classical Chinese unless requested."
       ]
+    },
+    "vocabularyDistractors": {
+      "name": "单词类型四选一干扰项",
+      "description": "For vocabulary cards, generate exactly 4 easily-confused options (1 correct + 3 plausible distractors) suitable for the first pass of the unified vocabulary review flow. Output {targetWord, correctAnswer, options (array of 4 strings), correctIndex (0-3)}.",
+      "rules": [
+        "Distractors must be semantically related or visually similar to the target word but clearly incorrect.",
+        "Prefer same part-of-speech and similar frequency/register.",
+        "Shuffle so the correct answer appears at a random position."
+      ]
+    },
+    "poetryMarkup": {
+      "name": "古诗文类型标注",
+      "description": "For classical Chinese poems or texts, mark the card as cardType: 'poetry' and produce recitation-friendly fields (hint, audioUrl).",
+      "rules": [
+        "Always set cardType to 'poetry' for ancient poems, verses, or classical Chinese passages.",
+        "Provide a concise hint covering author, title, and core imagery.",
+        "Provide audioUrl when a suitable recitation audio is available."
+      ]
     }
   },
   "qualityGuidelines": {
@@ -380,7 +432,7 @@
   },
   "validationChecklist": [
     "All required fields present (question, answer, cardType) on every card.",
-    "cardType is one of: qa, fill_blank, dictation, code, image, audio.",
+    "cardType is one of: qa, fill_blank, dictation, code, image, audio, vocabulary, poetry.",
     "image cards have a non-empty imageUrl; audio cards have a non-empty audioUrl; dictation cards have audioUrl when audio is available.",
     "No duplicate questions within the file.",
     "Tags are comma-separated with no spaces inside individual tags (spaces around commas are tolerated).",

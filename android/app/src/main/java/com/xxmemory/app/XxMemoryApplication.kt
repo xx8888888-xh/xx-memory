@@ -76,6 +76,7 @@ class XxMemoryApplication : Application() {
             hint = json.get("hint")?.asString ?: "",
             rhyme = json.get("rhyme")?.asString ?: "",
             derivatives = json.get("derivatives")?.asString ?: "",
+            distractors = json.get("distractors")?.asString ?: json.get("options")?.asString ?: "",
             mastered = false,
             nextReviewDate = System.currentTimeMillis(),
             learningStage = 0

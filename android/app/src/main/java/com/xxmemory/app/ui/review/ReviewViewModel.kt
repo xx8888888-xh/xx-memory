@@ -128,8 +128,10 @@ class ReviewViewModel : ViewModel() {
                 }
 
                 // Load distractor candidates once for option generation.
+                // Use all unmastered cards (including current due queue) so that
+                // newly imported cards can still borrow plausible distractors.
                 allCardsForDistractors = repository.getAllCardsSync()
-                    .filter { !it.mastered && it.id !in cards.map { c -> c.id } }
+                    .filter { !it.mastered }
 
                 // Apply daily card limit
                 val limit = if (settingsManager.dailyCardLimitEnabled) {
@@ -170,10 +172,26 @@ class ReviewViewModel : ViewModel() {
         }
     }
 
-    private fun initialStepForMode(mode: ReviewMode, card: Card?): ReviewStep = when (mode) {
-        ReviewMode.FLASHCARD -> ReviewStep.QUESTION
-        ReviewMode.BAICIZHAN -> ReviewStep.QUESTION
-        ReviewMode.BBDC -> initialStepForBbdcCard(card)
+    private fun initialStepForMode(mode: ReviewMode, card: Card?): ReviewStep {
+        card ?: return ReviewStep.QUESTION
+        return when (card.cardType) {
+            Card.TYPE_POETRY -> ReviewStep.DICTATION
+            Card.TYPE_VOCABULARY -> initialStepForVocabulary(card)
+            else -> when (mode) {
+                ReviewMode.FLASHCARD -> ReviewStep.QUESTION
+                ReviewMode.BAICIZHAN -> ReviewStep.QUESTION
+                ReviewMode.BBDC -> initialStepForBbdcCard(card)
+            }
+        }
+    }
+
+    private fun initialStepForVocabulary(card: Card): ReviewStep = when (card.learningStage) {
+        Card.STAGE_NEW -> ReviewStep.OPTIONS
+        Card.STAGE_OPTIONS_PASSED -> ReviewStep.EXAMPLE_REVIEW
+        Card.STAGE_EXAMPLE_PASSED -> ReviewStep.INDEPENDENT_RECALL
+        Card.STAGE_LEARNED -> ReviewStep.SELF_ASSESSMENT
+        Card.STAGE_SPELLING_PASSED -> ReviewStep.SELF_ASSESSMENT
+        else -> ReviewStep.OPTIONS
     }
 
     private fun initialStepForBbdcCard(card: Card?): ReviewStep {
@@ -182,11 +200,11 @@ class ReviewViewModel : ViewModel() {
             Card.TYPE_DICTATION -> ReviewStep.DICTATION
             Card.TYPE_FILL_BLANK -> ReviewStep.FILL_BLANK
             else -> when (card.learningStage) {
-                Card.STAGE_NEW -> ReviewStep.OPTIONS
+                Card.STAGE_NEW -> ReviewStep.RECALL
                 Card.STAGE_OPTIONS_PASSED -> ReviewStep.EXAMPLE_REVIEW
-                Card.STAGE_EXAMPLE_PASSED -> ReviewStep.SELF_ASSESSMENT
+                Card.STAGE_EXAMPLE_PASSED -> ReviewStep.INDEPENDENT_RECALL
                 Card.STAGE_LEARNED -> ReviewStep.SELF_ASSESSMENT
-                else -> ReviewStep.SELF_ASSESSMENT
+                else -> ReviewStep.RECALL
             }
         }
     }
@@ -224,16 +242,33 @@ class ReviewViewModel : ViewModel() {
 
     private fun generateOptions(card: Card?): List<String> {
         val correct = card?.answer?.trim()?.takeIf { it.isNotBlank() } ?: return emptyList()
-        val distractors = allCardsForDistractors
-            .map { it.answer.trim() }
+
+        // 优先使用 AI 在导入时生成的干扰项
+        val presetDistractors = card.distractors
+            .split(",", "，", ";")
+            .map { it.trim() }
             .filter { it.isNotBlank() && it != correct }
             .distinct()
             .shuffled()
             .take(3)
+
+        val distractors = if (presetDistractors.size >= 3) {
+            presetDistractors
+        } else {
+            val poolDistractors = allCardsForDistractors
+                .filter { it.id != card.id }
+                .map { it.answer.trim() }
+                .filter { it.isNotBlank() && it != correct && it !in presetDistractors }
+                .distinct()
+                .shuffled()
+                .take(3 - presetDistractors.size)
+            presetDistractors + poolDistractors
+        }
+
         val options = (distractors + correct).shuffled()
         return if (options.size < 4) {
             val placeholders = listOf("选项 A", "选项 B", "选项 C", "选项 D")
-                .filter { it != correct }
+                .filter { it != correct && it !in distractors }
                 .take(3 - distractors.size)
             (distractors + placeholders + correct).shuffled()
         } else options
@@ -303,10 +338,10 @@ class ReviewViewModel : ViewModel() {
         val card = state.currentCard ?: return
         val correct = card.answer.trim()
         val selectedCorrect = option.trim() == correct
-        val isBbdc = state.reviewMode == ReviewMode.BBDC
+        val isVocabulary = state.reviewMode == ReviewMode.BBDC || card.cardType == Card.TYPE_VOCABULARY
 
-        _uiState.value = if (selectedCorrect && isBbdc) {
-            // BBDC 选对后进入例句自评（有例句）或独立回忆（无例句），不立即计分。
+        _uiState.value = if (selectedCorrect && isVocabulary) {
+            // 单词类型选对后进入例句自评（有例句）或独立回忆（无例句），不立即计分。
             // 注意：不重置 wrongAttempts，保留到 assessBbdcStage 用于 quality 降级。
             val hasExample = card.example.isNotBlank()
             state.copy(
@@ -318,8 +353,8 @@ class ReviewViewModel : ViewModel() {
                 showAnswer = false,
                 currentCard = card.copy(learningStage = Card.STAGE_OPTIONS_PASSED)
             )
-        } else if (!selectedCorrect && isBbdc) {
-            // BBDC 选错：保持 OPTIONS 步骤，增加错误计数，不进入 DETAIL，允许重试
+        } else if (!selectedCorrect && isVocabulary) {
+            // 单词类型选错：保持 OPTIONS 步骤，增加错误计数，不进入 DETAIL，允许重试
             state.copy(
                 selectedOption = option,
                 isCorrect = false,
@@ -391,6 +426,7 @@ class ReviewViewModel : ViewModel() {
             Card.STAGE_OPTIONS_PASSED -> if (assessment == SelfAssessment.CORRECT) Card.STAGE_EXAMPLE_PASSED else Card.STAGE_OPTIONS_PASSED
             Card.STAGE_EXAMPLE_PASSED -> if (assessment == SelfAssessment.CORRECT) Card.STAGE_LEARNED else Card.STAGE_OPTIONS_PASSED
             Card.STAGE_LEARNED -> Card.STAGE_LEARNED
+            Card.STAGE_SPELLING_PASSED -> Card.STAGE_LEARNED
             else -> card.learningStage
         }
         assessBbdcStage(quality = quality, nextStage = nextStage)
@@ -416,6 +452,16 @@ class ReviewViewModel : ViewModel() {
                 )
 
                 val nextReviewDate = applyStudyMode(result.nextReviewDate)
+
+                if (nextStage == Card.STAGE_LEARNED && card.learningStage < Card.STAGE_LEARNED && card.cardType == Card.TYPE_VOCABULARY) {
+                    // 单词类型首次学会：进入拼写检查
+                    _uiState.value = state.copy(
+                        step = ReviewStep.SPELLING,
+                        showSpelling = true,
+                        spellingResult = SpellingResult.Idle
+                    )
+                    return@launch
+                }
 
                 val updatedCard = card.copy(
                     repetitions = result.nextRepetitions,
@@ -631,10 +677,10 @@ class ReviewViewModel : ViewModel() {
         )
     }
 
-    /** 检查拼写输入。 */
+    /** 检查拼写输入。拼写对话框要求根据释义拼写 question，因此以 question 为正确答案。 */
     fun checkSpelling(input: String) {
         val card = _uiState.value.currentCard ?: return
-        val correct = card.answer.trim()
+        val correct = card.question.trim()
         val normalizedInput = input.trim()
         val isCorrect = normalizedInput.equals(correct, ignoreCase = true)
         _uiState.value = _uiState.value.copy(
@@ -645,12 +691,44 @@ class ReviewViewModel : ViewModel() {
     /** 完成拼写测试并评估。 */
     fun finishSpelling() {
         val wasCorrect = _uiState.value.spellingResult is SpellingResult.Correct
-        _uiState.value = _uiState.value.copy(showSpelling = false)
-        assessCard(if (wasCorrect) 3 else 0)
+        val state = _uiState.value
+        val card = state.currentCard ?: return
+        if (wasCorrect) {
+            _uiState.value = state.copy(
+                showSpelling = false,
+                currentCard = card.copy(learningStage = Card.STAGE_LEARNED)
+            )
+            assessBbdcStage(quality = 3, nextStage = Card.STAGE_LEARNED)
+        } else {
+            // 拼写错误，回到 OPTIONS 重学
+            _uiState.value = state.copy(
+                showSpelling = false,
+                step = ReviewStep.OPTIONS,
+                options = generateOptions(card),
+                selectedOption = null,
+                isCorrect = null,
+                selfAssessment = null,
+                showAnswer = false,
+                currentCard = card.copy(learningStage = Card.STAGE_NEW),
+                wrongAttempts = state.wrongAttempts + 1
+            )
+        }
     }
 
     fun cancelSpelling() {
-        _uiState.value = _uiState.value.copy(showSpelling = false, spellingResult = SpellingResult.Idle)
+        val state = _uiState.value
+        val card = state.currentCard
+        if (state.step == ReviewStep.SPELLING && card?.cardType == Card.TYPE_VOCABULARY) {
+            // 单词类型拼写检查不可跳过，取消后回到自评步骤
+            _uiState.value = state.copy(
+                showSpelling = false,
+                spellingResult = SpellingResult.Idle,
+                step = ReviewStep.SELF_ASSESSMENT,
+                showAnswer = true
+            )
+        } else {
+            _uiState.value = state.copy(showSpelling = false, spellingResult = SpellingResult.Idle)
+        }
     }
 
     fun toggleFavorite(card: Card) {
@@ -687,6 +765,15 @@ class ReviewViewModel : ViewModel() {
             (card.learningStage + 1).coerceAtMost(Card.STAGE_LEARNED)
         } else card.learningStage
         assessBbdcStage(quality = quality, nextStage = nextStage)
+    }
+
+    /** 跳过古诗文朗诵阶段，直接进入默写。 */
+    fun skipRecitation() {
+        val card = _uiState.value.currentCard ?: return
+        if (card.cardType != Card.TYPE_POETRY) return
+        _uiState.value = _uiState.value.copy(
+            step = ReviewStep.DICTATION
+        )
     }
 
     fun updateFillBlankInput(input: String) {

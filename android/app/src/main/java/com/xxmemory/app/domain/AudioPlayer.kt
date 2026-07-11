@@ -6,9 +6,10 @@ import android.net.Uri
 import android.speech.tts.TextToSpeech
 import java.util.Locale
 
-/**
- * 统一音频播放器：优先播放网络/本地音频文件，回退到 TTS。
- * 支持暂停/停止与自动释放。
+/**>
+ * 统一音频播放器：仅播放用户上传的音频文件（audioUrl）。
+ * 不再自动回退到 TTS，避免在复习时“自动朗读”内容。
+ * 若需要朗读，由调用方显式调用 playTts。
  */
 class AudioPlayer(context: Context) {
 
@@ -33,14 +34,13 @@ class AudioPlayer(context: Context) {
     }
 
     /**
-     * 播放音频。如果 audioUrl 非空则使用 MediaPlayer，否则使用 TTS 朗读文本。
+     * 播放用户上传的音频文件。audioUrl 为空时不再自动 TTS 朗读。
+     * 若调用方需要朗读，请使用 playTts。
      */
     fun play(audioUrl: String?, fallbackText: String) {
         stop()
         if (!audioUrl.isNullOrBlank()) {
             playMedia(audioUrl)
-        } else if (fallbackText.isNotBlank() && isTtsReady) {
-            tts?.speak(fallbackText, TextToSpeech.QUEUE_FLUSH, null, null)
         }
     }
 

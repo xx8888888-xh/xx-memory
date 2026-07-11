@@ -1,12 +1,9 @@
 package com.xxmemory.app.ui.review
 
-import android.content.Intent
-import android.net.Uri
 import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,17 +26,12 @@ import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.SpeakerNotes
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -47,8 +39,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -69,7 +59,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -99,6 +88,7 @@ fun ReviewScreen(
     val isBbdcImmersiveMode = remember { settings.bbdcImmersiveMode }
 
     var ttsReady by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
     val tts = remember {
         TextToSpeech(context) { status ->
             ttsReady = status == TextToSpeech.SUCCESS
@@ -117,12 +107,13 @@ fun ReviewScreen(
         }
     }
 
-    // Auto-play audio when a card question appears or the answer is revealed.
+    // 自动播放用户上传的音频（不再自动 TTS 朗读）。
     LaunchedEffect(uiState.step, uiState.currentCard?.id) {
         val card = uiState.currentCard ?: return@LaunchedEffect
+        val hasAudio = !card.audioUrl.isNullOrBlank()
         when (uiState.step) {
             ReviewStep.DETAIL -> {
-                if (settings.ttsAutoPlayAnswer) {
+                if (settings.ttsAutoPlayAnswer && hasAudio) {
                     audioPlayer.play(card.audioUrl, card.answer)
                 }
             }
@@ -134,7 +125,7 @@ fun ReviewScreen(
             ReviewStep.SELF_ASSESSMENT,
             ReviewStep.DICTATION,
             ReviewStep.FILL_BLANK -> {
-                if (settings.ttsAutoPlayQuestion) {
+                if (settings.ttsAutoPlayQuestion && hasAudio) {
                     audioPlayer.play(card.audioUrl, card.question)
                 }
             }
@@ -142,11 +133,11 @@ fun ReviewScreen(
         }
     }
 
-    // Auto-play answer audio when dictation / fill-blank result is revealed.
+    // 自动播放用户上传的答案音频（不再自动 TTS 朗读）。
     LaunchedEffect(uiState.dictationResult, uiState.fillBlankResult, uiState.currentCard?.id) {
         if (!settings.ttsAutoPlayAnswer) return@LaunchedEffect
         val card = uiState.currentCard ?: return@LaunchedEffect
-        if (uiState.dictationResult != null || uiState.fillBlankResult != null) {
+        if ((uiState.dictationResult != null || uiState.fillBlankResult != null) && !card.audioUrl.isNullOrBlank()) {
             audioPlayer.play(card.audioUrl, card.answer)
         }
     }
@@ -159,6 +150,22 @@ fun ReviewScreen(
             onCheck = { viewModel.checkSpelling(it) },
             onFinish = { viewModel.finishSpelling() },
             onCancel = { viewModel.cancelSpelling() }
+        )
+    }
+
+    if (showMoreMenu) {
+        MoreMenuDialog(
+            uiState = uiState,
+            isEinkMode = isEinkMode,
+            tts = tts,
+            ttsReady = ttsReady,
+            audioPlayer = audioPlayer,
+            onDismiss = { showMoreMenu = false },
+            onSwitchMode = { viewModel.switchReviewMode(it) },
+            onToggleFavorite = { uiState.currentCard?.let { viewModel.toggleFavorite(it) } },
+            onMarkMastered = { viewModel.markMastered() },
+            onShowHint = { viewModel.showHint(); showMoreMenu = false },
+            onStartSpelling = { viewModel.startSpellingTest(); showMoreMenu = false }
         )
     }
 
@@ -189,16 +196,7 @@ fun ReviewScreen(
         ReviewProgressBar(progress = uiState.progress, isEinkMode = isEinkMode)
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Mode switcher
-        if (!isImmersive) {
-            ModeSwitcher(
-                currentMode = uiState.reviewMode,
-                onModeChange = { viewModel.switchReviewMode(it) }
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
-        // Counter
+        // Header: counter + more menu
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -209,8 +207,15 @@ fun ReviewScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            if (isImmersive) {
-                ModeLabel(mode = uiState.reviewMode, isEinkMode = isEinkMode)
+            IconButton(
+                onClick = { showMoreMenu = true },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = "更多",
+                    tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
@@ -243,34 +248,22 @@ fun ReviewScreen(
             if (!isImmersive) {
                 CardMetaRow(
                     card = card,
-                    isEinkMode = isEinkMode,
-                    onToggleFavorite = { viewModel.toggleFavorite(card) }
+                    isEinkMode = isEinkMode
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            // Main content area with swipe gestures
+            // Main content area
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .pointerInput(uiState.currentCard?.id, uiState.reviewMode) {
-                        detectHorizontalDragGestures { change, dragAmount ->
-                            change.consume()
-                            when {
-                                dragAmount < -120f -> viewModel.toggleFavorite(card)
-                                dragAmount > 120f -> viewModel.markMastered()
-                            }
-                        }
-                    }
             ) {
                 when (uiState.step) {
                     ReviewStep.RECALL -> if (isImmersive) {
                         BbdcImmersiveRecallCard(
                             card = card,
                             isEinkMode = isEinkMode,
-                            tts = tts,
-                            ttsReady = ttsReady,
                             onKnow = { viewModel.onKnowCard() },
                             onDontKnow = { viewModel.onDontKnowCard() }
                         )
@@ -278,8 +271,6 @@ fun ReviewScreen(
                         BbdcRecallCard(
                             card = card,
                             isEinkMode = isEinkMode,
-                            tts = tts,
-                            ttsReady = ttsReady,
                             onKnow = { viewModel.onKnowCard() },
                             onDontKnow = { viewModel.onDontKnowCard() }
                         )
@@ -289,8 +280,6 @@ fun ReviewScreen(
                         card = card,
                         isEinkMode = isEinkMode,
                         showImage = showImageInQuestion,
-                        tts = tts,
-                        ttsReady = ttsReady,
                         onReveal = {
                             when (uiState.reviewMode) {
                                 ReviewMode.BAICIZHAN -> viewModel.onBaicizhanShowDetail()
@@ -319,8 +308,6 @@ fun ReviewScreen(
                                 selectedOption = uiState.selectedOption,
                                 isEinkMode = isEinkMode,
                                 showImage = showImageInQuestion,
-                                tts = tts,
-                                ttsReady = ttsReady,
                                 onSelect = { viewModel.selectOption(it) }
                             )
                         }
@@ -332,8 +319,6 @@ fun ReviewScreen(
                         card = card,
                         step = uiState.step,
                         isEinkMode = isEinkMode,
-                        tts = tts,
-                        ttsReady = ttsReady,
                         onExampleClear = { viewModel.assessExampleReview(clear = true) },
                         onExampleWrong = { viewModel.assessExampleReview(clear = false) },
                         onSelfAssessment = { viewModel.selectSelfAssessment(it) }
@@ -345,9 +330,7 @@ fun ReviewScreen(
                         showHint = uiState.showHint,
                         isEinkMode = isEinkMode,
                         isDeepMode = isBaicizhanDeepMode || uiState.reviewMode == ReviewMode.BBDC,
-                        reviewMode = uiState.reviewMode,
-                        tts = tts,
-                        ttsReady = ttsReady
+                        reviewMode = uiState.reviewMode
                     )
 
                     ReviewStep.DICTATION -> DictationCard(
@@ -357,10 +340,15 @@ fun ReviewScreen(
                         isEinkMode = isEinkMode,
                         tts = tts,
                         ttsReady = ttsReady,
+                        poetryRecitationEnabled = settings.poetryRecitationEnabled,
                         onInputChange = { viewModel.updateDictationInput(it) },
-                        onPlayAudio = { audioPlayer.play(card.audioUrl, card.question) },
+                        onPlayAudio = {
+                            val url = card.audioUrl
+                            if (!url.isNullOrBlank()) audioPlayer.play(url, card.question)
+                        },
                         onCheck = { viewModel.checkDictation() },
-                        onFinish = { viewModel.finishDictation() }
+                        onFinish = { viewModel.finishDictation() },
+                        onSkipRecitation = { viewModel.skipRecitation() }
                     )
 
                     ReviewStep.FILL_BLANK -> FillBlankCard(
@@ -368,8 +356,6 @@ fun ReviewScreen(
                         input = uiState.fillBlankInput,
                         result = uiState.fillBlankResult,
                         isEinkMode = isEinkMode,
-                        tts = tts,
-                        ttsReady = ttsReady,
                         onInputChange = { viewModel.updateFillBlankInput(it) },
                         onCheck = { viewModel.checkFillBlank() },
                         onFinish = { viewModel.finishFillBlank() }
@@ -384,16 +370,13 @@ fun ReviewScreen(
             // Bottom action area
             BottomActionArea(
                 uiState = uiState,
+                cardType = card.cardType,
                 isEinkMode = isEinkMode,
-                isImmersive = isImmersive,
                 flashcardPreviews = flashcardPreviews,
                 selectionPreview = selectionPreview,
                 onReveal = { viewModel.flipCard() },
-                onShowHint = { viewModel.showHint() },
-                onStartSpelling = { viewModel.startSpellingTest() },
                 onAssess = { quality -> viewModel.assessCard(quality) },
                 onAssessSelection = { viewModel.assessCurrentFromSelection() },
-                onMarkMastered = { viewModel.markMastered() },
                 onBaicizhanKnow = { viewModel.onBaicizhanKnow() },
                 onBaicizhanShowDetail = { viewModel.onBaicizhanShowDetail() },
                 onChangeSelfAssessment = { viewModel.changeSelfAssessment(it) },
@@ -411,26 +394,6 @@ fun ReviewScreen(
                 )
             }
         }
-    }
-}
-
-@Composable
-internal fun SpeakButton(
-    text: String,
-    tts: TextToSpeech,
-    ttsReady: Boolean,
-    isEinkMode: Boolean
-) {
-    if (!ttsReady || text.isBlank()) return
-    IconButton(
-        onClick = { tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null) }
-    ) {
-        Icon(
-            imageVector = Icons.Filled.VolumeUp,
-            contentDescription = "朗读",
-            tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
     }
 }
 
@@ -452,6 +415,9 @@ internal fun TypeLabel(cardType: String, isEinkMode: Boolean) {
         CardEntity.TYPE_CODE -> "代码"
         CardEntity.TYPE_IMAGE -> "图片"
         CardEntity.TYPE_AUDIO -> "音频"
+        CardEntity.TYPE_DICTATION -> "默写"
+        CardEntity.TYPE_VOCABULARY -> "单词"
+        CardEntity.TYPE_POETRY -> "古诗文"
         else -> null
     } ?: return
     Box(
@@ -487,31 +453,6 @@ private fun CodeBlock(text: String) {
             text = displayText,
             style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
             color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-internal fun AudioButton(
-    audioUrl: String?,
-    isEinkMode: Boolean
-) {
-    if (audioUrl.isNullOrBlank()) return
-    val context = LocalContext.current
-    IconButton(
-        onClick = {
-            try {
-                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(audioUrl)))
-            } catch (_: Exception) {
-                // Ignore if no player available
-            }
-        }
-    ) {
-        Icon(
-            imageVector = Icons.Filled.PlayArrow,
-            contentDescription = "播放音频",
-            tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
         )
     }
 }
@@ -597,51 +538,144 @@ private fun ModeLabel(mode: ReviewMode, isEinkMode: Boolean) {
 }
 
 @Composable
+private fun MoreMenuDialog(
+    uiState: ReviewUiState,
+    isEinkMode: Boolean,
+    tts: TextToSpeech,
+    ttsReady: Boolean,
+    audioPlayer: AudioPlayer,
+    onDismiss: () -> Unit,
+    onSwitchMode: (ReviewMode) -> Unit,
+    onToggleFavorite: () -> Unit,
+    onMarkMastered: () -> Unit,
+    onShowHint: () -> Unit,
+    onStartSpelling: () -> Unit
+) {
+    val card = uiState.currentCard
+    EinkAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("更多", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                // 模式切换
+                Text(
+                    text = "切换复习模式",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                )
+                ModeSwitcher(
+                    currentMode = uiState.reviewMode,
+                    onModeChange = {
+                        onSwitchMode(it)
+                        onDismiss()
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 二级功能按钮
+                val buttonColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                TextButton(
+                    onClick = { onToggleFavorite(); onDismiss() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColors(contentColor = buttonColor)
+                ) {
+                    Text(if (card?.isFavorite == true) "取消收藏" else "收藏卡片")
+                }
+                TextButton(
+                    onClick = { onMarkMastered(); onDismiss() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColors(contentColor = buttonColor)
+                ) {
+                    Text("斩熟词（不再复习）")
+                }
+                if (uiState.reviewMode == ReviewMode.BAICIZHAN && !uiState.showHint && card?.cardType != CardEntity.TYPE_VOCABULARY) {
+                    TextButton(
+                        onClick = onShowHint,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.textButtonColors(contentColor = buttonColor)
+                    ) {
+                        Text("提示一下")
+                    }
+                }
+                TextButton(
+                    onClick = onStartSpelling,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColors(contentColor = buttonColor)
+                ) {
+                    Text("拼写测试")
+                }
+                val hasAudioUrl = card?.audioUrl?.isNotBlank() == true
+                TextButton(
+                    onClick = {
+                        card?.question?.let { audioPlayer.play(card.audioUrl, it) }
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = card != null && hasAudioUrl,
+                    colors = ButtonDefaults.textButtonColors(contentColor = buttonColor)
+                ) {
+                    Text("播放音频")
+                }
+                TextButton(
+                    onClick = {
+                        if (ttsReady && card?.question?.isNotBlank() == true) {
+                            tts.speak(card.question, TextToSpeech.QUEUE_FLUSH, null, null)
+                        }
+                        onDismiss()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = ttsReady && card?.question?.isNotBlank() == true,
+                    colors = ButtonDefaults.textButtonColors(contentColor = buttonColor)
+                ) {
+                    Text("朗读问题")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
+}
+
+@Composable
 private fun CardMetaRow(
     card: CardEntity,
-    isEinkMode: Boolean,
-    onToggleFavorite: () -> Unit
+    isEinkMode: Boolean
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (card.subject.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(
-                            if (isEinkMode) MaterialTheme.colorScheme.surfaceVariant
-                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        )
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = card.subject,
-                        color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold
+        if (card.subject.isNotEmpty()) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(
+                        if (isEinkMode) MaterialTheme.colorScheme.surfaceVariant
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
                     )
-                }
-            }
-            if (card.tags.isNotBlank()) {
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+            ) {
                 Text(
-                    text = card.tags.split(",").take(3).joinToString(" · ") { it.trim() },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = card.subject,
+                    color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
-        IconButton(onClick = onToggleFavorite) {
-            Icon(
-                imageVector = if (card.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                contentDescription = if (card.isFavorite) "已收藏" else "收藏",
-                tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+        if (card.tags.isNotBlank()) {
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = card.tags.split(",").take(3).joinToString(" · ") { it.trim() },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -652,8 +686,6 @@ private fun QuestionCard(
     card: CardEntity,
     isEinkMode: Boolean,
     showImage: Boolean,
-    tts: TextToSpeech,
-    ttsReady: Boolean,
     onReveal: () -> Unit
 ) {
     Card(
@@ -674,25 +706,7 @@ private fun QuestionCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
-                    Row {
-                        AudioButton(
-                            audioUrl = card.audioUrl,
-                            isEinkMode = isEinkMode
-                        )
-                        SpeakButton(
-                            text = card.question,
-                            tts = tts,
-                            ttsReady = ttsReady,
-                            isEinkMode = isEinkMode
-                        )
-                    }
-                }
+                TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
                 Spacer(modifier = Modifier.height(16.dp))
                 if (showImage && !card.imageUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -740,8 +754,6 @@ private fun QuestionCard(
 private fun BbdcRecallCard(
     card: CardEntity,
     isEinkMode: Boolean,
-    tts: TextToSpeech,
-    ttsReady: Boolean,
     onKnow: () -> Unit,
     onDontKnow: () -> Unit
 ) {
@@ -764,25 +776,7 @@ private fun BbdcRecallCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.verticalScroll(rememberScrollState())
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
-                        Row {
-                            AudioButton(
-                                audioUrl = card.audioUrl,
-                                isEinkMode = isEinkMode
-                            )
-                            SpeakButton(
-                                text = card.question,
-                                tts = tts,
-                                ttsReady = ttsReady,
-                                isEinkMode = isEinkMode
-                            )
-                        }
-                    }
+                    TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
                     Spacer(modifier = Modifier.height(16.dp))
                     if (!card.imageUrl.isNullOrBlank()) {
                         AsyncImage(
@@ -857,8 +851,6 @@ private fun BbdcRecallCard(
 private fun BbdcImmersiveRecallCard(
     card: CardEntity,
     isEinkMode: Boolean,
-    tts: TextToSpeech,
-    ttsReady: Boolean,
     onKnow: () -> Unit,
     onDontKnow: () -> Unit
 ) {
@@ -867,25 +859,7 @@ private fun BbdcImmersiveRecallCard(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
-            Row {
-                AudioButton(
-                    audioUrl = card.audioUrl,
-                    isEinkMode = isEinkMode
-                )
-                SpeakButton(
-                    text = card.question,
-                    tts = tts,
-                    ttsReady = ttsReady,
-                    isEinkMode = isEinkMode
-                )
-            }
-        }
+        TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (!card.imageUrl.isNullOrBlank()) {
                 AsyncImage(
@@ -958,8 +932,6 @@ private fun OptionsCard(
     selectedOption: String?,
     isEinkMode: Boolean,
     showImage: Boolean,
-    tts: TextToSpeech,
-    ttsReady: Boolean,
     onSelect: (String) -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -978,25 +950,7 @@ private fun OptionsCard(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
-                    Row {
-                        AudioButton(
-                            audioUrl = card.audioUrl,
-                            isEinkMode = isEinkMode
-                        )
-                        SpeakButton(
-                            text = card.question,
-                            tts = tts,
-                            ttsReady = ttsReady,
-                            isEinkMode = isEinkMode
-                        )
-                    }
-                }
+                TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
                 Spacer(modifier = Modifier.height(12.dp))
                 if (showImage && !card.imageUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -1112,9 +1066,7 @@ private fun DetailCard(
     showHint: Boolean,
     isEinkMode: Boolean,
     isDeepMode: Boolean,
-    reviewMode: ReviewMode,
-    tts: TextToSpeech,
-    ttsReady: Boolean
+    reviewMode: ReviewMode
 ) {
     val scrollState = rememberScrollState()
     Card(
@@ -1162,38 +1114,19 @@ private fun DetailCard(
             }
 
             // Question + answer header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = card.question,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold
+                )
+                if (card.phonetic.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = card.question,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (card.phonetic.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = card.phonetic,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                IconButton(
-                    onClick = {
-                        if (ttsReady) {
-                            tts.speak(card.answer, TextToSpeech.QUEUE_FLUSH, null, null)
-                        }
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.VolumeUp,
-                        contentDescription = "朗读",
-                        tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                        text = card.phonetic,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -1360,16 +1293,13 @@ private fun InfoCard(
 @Composable
 private fun BottomActionArea(
     uiState: ReviewUiState,
+    cardType: String,
     isEinkMode: Boolean,
-    isImmersive: Boolean,
     flashcardPreviews: List<Int?>,
     selectionPreview: Int?,
     onReveal: () -> Unit,
-    onShowHint: () -> Unit,
-    onStartSpelling: () -> Unit,
     onAssess: (Int) -> Unit,
     onAssessSelection: () -> Unit,
-    onMarkMastered: () -> Unit,
     onBaicizhanKnow: () -> Unit,
     onBaicizhanShowDetail: () -> Unit,
     onChangeSelfAssessment: (SelfAssessment) -> Unit,
@@ -1426,24 +1356,70 @@ private fun BottomActionArea(
         }
 
         ReviewStep.OPTIONS -> {
-            if (uiState.reviewMode == ReviewMode.BAICIZHAN && !uiState.showHint) {
-                OutlinedButton(
-                    onClick = onShowHint,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
-                    )
-                ) {
-                    Icon(Icons.Filled.Lightbulb, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("提示一下")
-                }
-            }
+            // 提示功能已移至二级菜单，保持选项页干净
         }
 
         ReviewStep.DETAIL -> {
-            when (uiState.reviewMode) {
+            if (cardType == CardEntity.TYPE_VOCABULARY || uiState.reviewMode == ReviewMode.BBDC) {
+                val showSelfAssessment = uiState.selfAssessment != null || uiState.isCorrect == false
+                if (showSelfAssessment) {
+                    val currentAssessment = uiState.selfAssessment ?: SelfAssessment.WRONG
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            BbdcSelfAssessmentChip(
+                                text = "记对了",
+                                selected = currentAssessment == SelfAssessment.CORRECT,
+                                isEinkMode = isEinkMode,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onChangeSelfAssessment(SelfAssessment.CORRECT) }
+                            )
+                            BbdcSelfAssessmentChip(
+                                text = "有点模糊",
+                                selected = currentAssessment == SelfAssessment.FUZZY,
+                                isEinkMode = isEinkMode,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onChangeSelfAssessment(SelfAssessment.FUZZY) }
+                            )
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            BbdcSelfAssessmentChip(
+                                text = "记不清",
+                                selected = currentAssessment == SelfAssessment.FORGOT,
+                                isEinkMode = isEinkMode,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onChangeSelfAssessment(SelfAssessment.FORGOT) }
+                            )
+                            BbdcSelfAssessmentChip(
+                                text = "记错了",
+                                selected = currentAssessment == SelfAssessment.WRONG,
+                                isEinkMode = isEinkMode,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onChangeSelfAssessment(SelfAssessment.WRONG) }
+                            )
+                        }
+                        AssessmentButton(
+                            text = "提交",
+                            subtext = scheduleSubtext(selectionPreview),
+                            isEinkMode = isEinkMode,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = {
+                                if (uiState.selfAssessment == null) {
+                                    onChangeSelfAssessment(SelfAssessment.WRONG)
+                                }
+                                onSubmitBbdcAssessment()
+                            }
+                        )
+                    }
+                } else {
+                    AssessmentButton(
+                        text = "下一个",
+                        subtext = scheduleSubtext(selectionPreview),
+                        isEinkMode = isEinkMode,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onAssessSelection() }
+                    )
+                }
+            } else when (uiState.reviewMode) {
                 ReviewMode.FLASHCARD -> {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1482,149 +1458,20 @@ private fun BottomActionArea(
                 }
 
                 ReviewMode.BAICIZHAN -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            ActionIconButton(
-                                icon = Icons.Filled.Create,
-                                label = "拼写测试",
-                                onClick = onStartSpelling,
-                                isEinkMode = isEinkMode,
-                                modifier = Modifier.weight(1f)
-                            )
-                            ActionIconButton(
-                                icon = Icons.Filled.Check,
-                                label = "斩熟词",
-                                onClick = onMarkMastered,
-                                isEinkMode = isEinkMode,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                        AssessmentButton(
-                            text = "继续学习",
-                            subtext = scheduleSubtext(selectionPreview),
-                            isEinkMode = isEinkMode,
-                            modifier = Modifier.fillMaxWidth(),
-                            onClick = { onAssessSelection() }
-                        )
-                    }
+                    AssessmentButton(
+                        text = "继续学习",
+                        subtext = scheduleSubtext(selectionPreview),
+                        isEinkMode = isEinkMode,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { onAssessSelection() }
+                    )
                 }
 
-                ReviewMode.BBDC -> {
-                    val showSelfAssessment = uiState.selfAssessment != null || uiState.isCorrect == false
-                    if (showSelfAssessment) {
-                        val currentAssessment = uiState.selfAssessment ?: SelfAssessment.WRONG
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                BbdcSelfAssessmentChip(
-                                    text = "记对了",
-                                    selected = currentAssessment == SelfAssessment.CORRECT,
-                                    isEinkMode = isEinkMode,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { onChangeSelfAssessment(SelfAssessment.CORRECT) }
-                                )
-                                BbdcSelfAssessmentChip(
-                                    text = "有点模糊",
-                                    selected = currentAssessment == SelfAssessment.FUZZY,
-                                    isEinkMode = isEinkMode,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { onChangeSelfAssessment(SelfAssessment.FUZZY) }
-                                )
-                            }
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                BbdcSelfAssessmentChip(
-                                    text = "记不清",
-                                    selected = currentAssessment == SelfAssessment.FORGOT,
-                                    isEinkMode = isEinkMode,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { onChangeSelfAssessment(SelfAssessment.FORGOT) }
-                                )
-                                BbdcSelfAssessmentChip(
-                                    text = "记错了",
-                                    selected = currentAssessment == SelfAssessment.WRONG,
-                                    isEinkMode = isEinkMode,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = { onChangeSelfAssessment(SelfAssessment.WRONG) }
-                                )
-                            }
-                            AssessmentButton(
-                                text = "提交",
-                                subtext = scheduleSubtext(selectionPreview),
-                                isEinkMode = isEinkMode,
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = {
-                                    if (uiState.selfAssessment == null) {
-                                        onChangeSelfAssessment(SelfAssessment.WRONG)
-                                    }
-                                    onSubmitBbdcAssessment()
-                                }
-                            )
-                        }
-                    } else {
-                        if (isImmersive) {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                ActionIconButton(
-                                    icon = Icons.Filled.Create,
-                                    label = "随手拼",
-                                    onClick = onStartSpelling,
-                                    isEinkMode = isEinkMode,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                AssessmentButton(
-                                    text = "下一个",
-                                    subtext = scheduleSubtext(selectionPreview),
-                                    isEinkMode = isEinkMode,
-                                    modifier = Modifier.weight(2f),
-                                    onClick = { onAssessSelection() }
-                                )
-                            }
-                        } else {
-                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    ActionIconButton(
-                                        icon = Icons.Filled.Create,
-                                        label = "随手拼",
-                                        onClick = onStartSpelling,
-                                        isEinkMode = isEinkMode,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    AssessmentButton(
-                                        text = "下一个",
-                                        subtext = scheduleSubtext(selectionPreview),
-                                        isEinkMode = isEinkMode,
-                                        modifier = Modifier.weight(1f),
-                                        onClick = { onAssessSelection() }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+                ReviewMode.BBDC -> {}
             }
         }
 
         else -> {}
-    }
-}
-
-@Composable
-private fun ActionIconButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    isEinkMode: Boolean,
-    modifier: Modifier = Modifier
-) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.height(52.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
-        )
-    ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp))
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -1731,7 +1578,7 @@ private fun SpellingDialog(
     onFinish: () -> Unit,
     onCancel: () -> Unit
 ) {
-    var input by remember { mutableStateOf("") }
+    var input by remember(card?.id) { mutableStateOf("") }
     val result = spellingResult ?: SpellingResult.Idle
 
     EinkAlertDialog(

@@ -18,6 +18,7 @@ class AlarmReceiver : BroadcastReceiver() {
             try {
                 runBlocking {
                     Scheduler.scheduleReviewReminder(context)
+                    Scheduler.schedulePoetryReminder(context)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

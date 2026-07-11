@@ -1,6 +1,5 @@
 package com.xxmemory.app.ui.review
 
-import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,8 +41,6 @@ internal fun BbdcLearningCard(
     card: CardEntity,
     step: ReviewStep,
     isEinkMode: Boolean,
-    tts: TextToSpeech,
-    ttsReady: Boolean,
     onExampleClear: () -> Unit,
     onExampleWrong: () -> Unit,
     onSelfAssessment: (SelfAssessment) -> Unit
@@ -68,22 +65,7 @@ internal fun BbdcLearningCard(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
-                        Row {
-                            AudioButton(audioUrl = card.audioUrl, isEinkMode = isEinkMode)
-                            SpeakButton(
-                                text = card.question,
-                                tts = tts,
-                                ttsReady = ttsReady,
-                                isEinkMode = isEinkMode
-                            )
-                        }
-                    }
+                    TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = card.question,
@@ -108,8 +90,6 @@ internal fun BbdcLearningCard(
                     ReviewStep.EXAMPLE_REVIEW -> ExampleReviewContent(
                         card = card,
                         isEinkMode = isEinkMode,
-                        tts = tts,
-                        ttsReady = ttsReady,
                         onClear = onExampleClear,
                         onWrong = onExampleWrong
                     )
@@ -137,8 +117,6 @@ internal fun BbdcLearningCard(
 private fun ExampleReviewContent(
     card: CardEntity,
     isEinkMode: Boolean,
-    tts: TextToSpeech,
-    ttsReady: Boolean,
     onClear: () -> Unit,
     onWrong: () -> Unit
 ) {
@@ -268,6 +246,12 @@ private fun SelfAssessmentButtons(
             isEinkMode = isEinkMode,
             isPrimary = false,
             onClick = { onSelfAssessment(SelfAssessment.FORGOT) }
+        )
+        SelfAssessmentButton(
+            text = "记错了",
+            isEinkMode = isEinkMode,
+            isPrimary = false,
+            onClick = { onSelfAssessment(SelfAssessment.WRONG) }
         )
     }
 }

@@ -1,6 +1,5 @@
 package com.xxmemory.app.ui.review
 
-import android.speech.tts.TextToSpeech
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,8 +41,6 @@ internal fun FillBlankCard(
     input: String,
     result: SpellingResult?,
     isEinkMode: Boolean,
-    tts: TextToSpeech,
-    ttsReady: Boolean,
     onInputChange: (String) -> Unit,
     onCheck: () -> Unit,
     onFinish: () -> Unit
@@ -70,22 +67,7 @@ internal fun FillBlankCard(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
-                        Row {
-                            AudioButton(audioUrl = card.audioUrl, isEinkMode = isEinkMode)
-                            SpeakButton(
-                                text = card.question,
-                                tts = tts,
-                                ttsReady = ttsReady,
-                                isEinkMode = isEinkMode
-                            )
-                        }
-                    }
+                    TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
                     Spacer(modifier = Modifier.height(24.dp))
                     Text(
                         text = "补全句子中的空缺",

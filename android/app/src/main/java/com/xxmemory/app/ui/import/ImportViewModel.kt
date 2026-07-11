@@ -192,7 +192,8 @@ class ImportViewModel : ViewModel() {
         etymology: String = "",
         hint: String = "",
         rhyme: String = "",
-        derivatives: String = ""
+        derivatives: String = "",
+        distractors: String = ""
     ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isImporting = true, importMessage = null)
@@ -212,7 +213,8 @@ class ImportViewModel : ViewModel() {
                     etymology = etymology,
                     hint = hint,
                     rhyme = rhyme,
-                    derivatives = derivatives
+                    derivatives = derivatives,
+                    distractors = distractors
                 )
                 repository.insertCard(card)
                 _uiState.value = _uiState.value.copy(
@@ -279,7 +281,10 @@ class ImportViewModel : ViewModel() {
                 ?: System.currentTimeMillis(),
             learningStage = json.get("learningStage")?.asInt
                 ?: json.get("learning_stage")?.asInt
-                ?: 0
+                ?: 0,
+            distractors = json.get("distractors")?.asString
+                ?: json.get("options")?.asString
+                ?: ""
         )
     }
 

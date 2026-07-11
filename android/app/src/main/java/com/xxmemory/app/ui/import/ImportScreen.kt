@@ -193,7 +193,7 @@ fun ImportScreen(
         ManualCardDialog(
             onDismiss = { showManualDialog = false },
             isEinkMode = isEinkMode,
-            onConfirm = { q, a, s, d, tags, type, img, aud, phonetic, example, collocations, etymology, hint, rhyme, derivatives ->
+            onConfirm = { q, a, s, d, tags, type, img, aud, phonetic, example, collocations, etymology, hint, rhyme, derivatives, distractors ->
                 viewModel.importManualCard(
                     question = q,
                     answer = a,
@@ -209,7 +209,8 @@ fun ImportScreen(
                     etymology = etymology,
                     hint = hint,
                     rhyme = rhyme,
-                    derivatives = derivatives
+                    derivatives = derivatives,
+                    distractors = distractors
                 )
                 showManualDialog = false
             }
@@ -484,7 +485,7 @@ private fun AiImportInfoDialog(
         title = { Text("AI 智能导入", fontWeight = FontWeight.Bold) },
         text = {
             Text(
-                "AI 智能导入需要配合项目中的 AI Skill 文件使用。\n\n使用方式：\n1. 将 skill/xx-memory-skill.json 文件导入支持的 AI 助手\n2. 通过对话让 AI 生成符合项目格式的 JSON/CSV/Markdown/TXT 卡片数据\n3. 将生成的内容粘贴到「从 JSON 导入」或保存为文件导入\n\nAI 助手将帮助你批量生成记忆卡片。"
+                "AI 智能导入需要配合项目中的 AI Skill 文件使用。\n\n使用方式：\n1. 将 skill/xx-memory-skill.json 文件导入支持的 AI 助手\n2. 明确告知 AI 卡片类型：单词类型请使用 cardType: vocabulary，古诗文类型请使用 cardType: poetry\n3. 通过对话让 AI 生成符合项目格式的 JSON/CSV/Markdown/TXT 卡片数据\n4. 将生成的内容粘贴到「从 JSON 导入」或保存为文件导入\n\nAI 助手将帮助你批量生成记忆卡片。"
             )
         },
         confirmButton = {
@@ -593,7 +594,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel, isEinkMode:
 private fun ManualCardDialog(
     onDismiss: () -> Unit,
     isEinkMode: Boolean,
-    onConfirm: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String) -> Unit
 ) {
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
@@ -609,6 +610,7 @@ private fun ManualCardDialog(
     var hint by remember { mutableStateOf("") }
     var rhyme by remember { mutableStateOf("") }
     var derivatives by remember { mutableStateOf("") }
+    var distractors by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(Card.TYPE_QA) }
 
     EinkAlertDialog(
@@ -714,6 +716,14 @@ private fun ManualCardDialog(
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = distractors,
+                    onValueChange = { distractors = it },
+                    label = { Text("四选一干扰项 (可选，单词卡用英文逗号分隔)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "卡片类型",
@@ -749,6 +759,16 @@ private fun ManualCardDialog(
                         onClick = { selectedType = Card.TYPE_DICTATION },
                         label = "默写卡"
                     )
+                    EinkFilterChip(
+                        selected = selectedType == Card.TYPE_VOCABULARY,
+                        onClick = { selectedType = Card.TYPE_VOCABULARY },
+                        label = "单词卡"
+                    )
+                    EinkFilterChip(
+                        selected = selectedType == Card.TYPE_POETRY,
+                        onClick = { selectedType = Card.TYPE_POETRY },
+                        label = "古诗文"
+                    )
                 }
                 if (selectedType == Card.TYPE_IMAGE) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -760,7 +780,7 @@ private fun ManualCardDialog(
                         singleLine = true
                     )
                 }
-                if (selectedType == Card.TYPE_AUDIO || selectedType == Card.TYPE_DICTATION) {
+                if (selectedType == Card.TYPE_AUDIO || selectedType == Card.TYPE_DICTATION || selectedType == Card.TYPE_POETRY) {
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = audioUrl,
@@ -774,7 +794,7 @@ private fun ManualCardDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(question, answer, subject, detail, tags, selectedType, imageUrl, audioUrl, phonetic, example, collocations, etymology, hint, rhyme, derivatives) },
+                onClick = { onConfirm(question, answer, subject, detail, tags, selectedType, imageUrl, audioUrl, phonetic, example, collocations, etymology, hint, rhyme, derivatives, distractors) },
                 enabled = question.isNotBlank() && answer.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary

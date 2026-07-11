@@ -86,4 +86,8 @@ interface CardDao {
         WHERE next_review_date >= :start AND next_review_date < :end AND mastered = 0
     """)
     suspend fun getDueCountBetween(start: Long, end: Long): Int
+
+    /** 查询指定类型当天到期的待复习卡片数量（用于古诗文等分类提醒）。 */
+    @Query("SELECT COUNT(*) FROM cards WHERE next_review_date <= :today AND mastered = 0 AND card_type = :type")
+    suspend fun getDueCountByTypeSync(today: Long, type: String): Int
 }

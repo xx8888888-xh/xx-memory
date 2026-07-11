@@ -103,7 +103,11 @@ data class Card(
 
     /** 默写/填空进度（可选），可保存用户上次输入 */
     @ColumnInfo(name = "dictation_progress")
-    val dictationProgress: String = ""
+    val dictationProgress: String = "",
+
+    /** 单词类型四选一干扰项，逗号分隔（优先于从卡片池生成） */
+    @ColumnInfo(name = "distractors")
+    val distractors: String = ""
 ) {
     companion object {
         const val TYPE_QA = "qa"
@@ -112,10 +116,13 @@ data class Card(
         const val TYPE_IMAGE = "image"
         const val TYPE_AUDIO = "audio"
         const val TYPE_DICTATION = "dictation"
+        const val TYPE_VOCABULARY = "vocabulary"
+        const val TYPE_POETRY = "poetry"
 
         const val STAGE_NEW = 0
         const val STAGE_OPTIONS_PASSED = 1
         const val STAGE_EXAMPLE_PASSED = 2
         const val STAGE_LEARNED = 3
+        const val STAGE_SPELLING_PASSED = 4
     }
 }

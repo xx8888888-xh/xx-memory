@@ -13,7 +13,7 @@ import com.xxmemory.app.data.entity.ReviewLog
 
 @Database(
     entities = [Card::class, ReviewLog::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -68,6 +68,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Cards v6 added distractors for vocabulary four-option review.
+                db.execSQL("ALTER TABLE cards ADD COLUMN distractors TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -77,7 +84,7 @@ abstract class AppDatabase : RoomDatabase() {
                 )
                     // 明确使用增量迁移，禁止静默破坏性降级，避免用户数据丢失。
                     // 若未来 schema 再次变更，请先新增 Migration 并升级 version。
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                     .also { INSTANCE = it }
             }
