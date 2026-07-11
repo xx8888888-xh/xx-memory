@@ -320,25 +320,48 @@ def test_poetry_review_flow(d):
         s = shot(d, "review_poetry_dictation")
         log("古诗文复习-开始默写", "PASS", "", s)
 
-    # Compose OutlinedTextField 可能不是 EditText，点击输入区后 set_text
+    # Compose OutlinedTextField 直接 set_text 比 focus 后输入更稳定，支持中文
     edits = d(className="android.widget.EditText")
     if edits.count > 0:
-        edits[0].click()
+        try:
+            edits[0].set_text("测试古诗全文内容")
+            log_write("古诗文默写：通过 EditText.set_text 输入成功")
+        except Exception as e:
+            log_write(f"EditText.set_text failed: {e}, fallback to focus input")
+            edits[0].click()
+            wait(0.5)
+            try:
+                d(focused=True).set_text("测试古诗全文内容")
+            except Exception as e2:
+                log_write(f"focus set_text failed: {e2}, fallback to adb shell input text")
+                d.shell("input text '测试古诗全文内容'")
     else:
         d.shell("input tap 360 600")
         wait(0.5)
-    try:
-        d(focused=True).set_text("测试古诗全文内容")
-    except Exception as e:
-        log_write(f"set_text failed: {e}, fallback to adb shell input text")
-        d.shell("input text '测试古诗全文内容'")
+        try:
+            d(focused=True).set_text("测试古诗全文内容")
+        except Exception as e:
+            log_write(f"set_text failed: {e}, fallback to adb shell input text")
+            d.shell("input text '测试古诗全文内容'")
+    wait(0.5)
+    # 多行输入框较高，检查按钮在屏幕外，需要上滑显示
+    d.swipe(360, 900, 360, 600, 0.5)
     wait(0.5)
     if not safe_click_text(d, "检查"):
-        d.shell("input tap 359 855")
+        log_write("检查按钮文字匹配失败，使用坐标兜底 (360, 988)")
+        d.shell("input tap 360 988")
         wait(0.5)
     wait(2.5)
     s = shot(d, "review_poetry_dictation_done")
     ok = has_text(d, "回答正确", partial=True) or has_text(d, "继续") or has_text(d, "下一个")
+    if not ok:
+        # debug dump
+        try:
+            import subprocess
+            subprocess.run(["D:/software/MuMuPlayer/nx_main/adb.exe", "-s", d.serial, "shell", "uiautomator", "dump", "/sdcard/poetry_fail.xml"], check=False)
+            subprocess.run(["D:/software/MuMuPlayer/nx_main/adb.exe", "-s", d.serial, "pull", "/sdcard/poetry_fail.xml", str(OUT_DIR / "poetry_fail.xml")], check=False)
+        except Exception as e:
+            log_write(f"debug dump failed: {e}")
     log("古诗文复习-默写提交", "PASS" if ok else "FAIL", "", s)
 
     back(d)
@@ -346,11 +369,29 @@ def test_poetry_review_flow(d):
 
 def test_settings(d):
     home(d)
-    # 右上角设置图标
-    tap_coord(d, 670, 110)
+    # 右上角设置图标：优先使用 content-desc="设置" 定位，fallback 到正确中心坐标
+    settings_btn = d(description="设置")
+    if settings_btn.exists:
+        # 点击父节点中心，避免子节点不可点击导致失效
+        parent = settings_btn.parent
+        if parent.exists:
+            _tap_element_center(d, parent)
+        else:
+            settings_btn.click()
+        log_write("设置页入口：通过 content-desc='设置' 点击")
+    else:
+        log_write("设置页入口：content-desc 未找到，使用坐标兜底 (640, 136)")
+        tap_coord(d, 640, 136)
     wait(2)
     s = shot(d, "settings_page")
     ok = has_text(d, "设置") or has_text(d, "每日卡片限制")
+    if not ok:
+        try:
+            import subprocess
+            subprocess.run(["D:/software/MuMuPlayer/nx_main/adb.exe", "-s", d.serial, "shell", "uiautomator", "dump", "/sdcard/settings_fail.xml"], check=False)
+            subprocess.run(["D:/software/MuMuPlayer/nx_main/adb.exe", "-s", d.serial, "pull", "/sdcard/settings_fail.xml", str(OUT_DIR / "settings_fail.xml")], check=False)
+        except Exception as e:
+            log_write(f"settings debug dump failed: {e}")
     log("设置页", "PASS" if ok else "FAIL", "", s)
 
     # 每日卡片限制输入框

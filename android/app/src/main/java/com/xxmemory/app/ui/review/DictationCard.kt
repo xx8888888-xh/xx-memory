@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -69,7 +70,7 @@ internal fun DictationCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -80,99 +81,106 @@ internal fun DictationCard(
                 verticalArrangement = Arrangement.Top
             ) {
                 if (isPoetry && !showInput) {
-                    // 古诗文朗诵阶段：只显示标题 + 开始/跳过按钮
-                    PoetryTitle(title = card.question)
-                    Spacer(modifier = Modifier.height(24.dp))
+                    // 古诗文朗诵阶段：只显示最小标题 + 开始/跳过按钮
+                    Text(
+                        text = card.question,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
                     Button(
                         onClick = { showInput = true },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(16.dp),
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("开始默写", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                        Text("开始默写", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedButton(
                         onClick = {
                             showInput = true
                             onSkipRecitation?.invoke()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("跳过朗诵")
+                        Text("跳过朗诵", fontSize = 14.sp)
                     }
                 } else {
                     if (isPoetry) {
-                        PoetryTitle(title = card.question)
-                    } else {
                         Text(
-                            text = "听音频，写出正确内容",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = card.question,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
 
                     Column(modifier = Modifier.fillMaxWidth()) {
                         OutlinedTextField(
                             value = input,
                             onValueChange = onInputChange,
-                            modifier = Modifier.fillMaxWidth(),
-                            minLines = 6,
-                            maxLines = 10,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 420.dp),
+                            minLines = 14,
+                            maxLines = 18,
                             label = { Text("默写全文") },
                             enabled = result !is SpellingResult.Correct
                         )
 
                         when (result) {
                             is SpellingResult.Correct -> {
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = Icons.Filled.Check,
                                         contentDescription = null,
                                         tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "回答正确",
                                         color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.SemiBold
                                     )
                                 }
                             }
                             is SpellingResult.Wrong -> {
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(
                                         imageVector = Icons.Filled.Close,
                                         contentDescription = null,
                                         tint = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
                                     Text(
                                         text = "正确答案：${result.correctAnswer}",
                                         color = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodyLarge
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
                             }
                             else -> {}
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         when (result) {
                             is SpellingResult.Correct, is SpellingResult.Wrong -> {
@@ -180,13 +188,13 @@ internal fun DictationCard(
                                     onClick = onFinish,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(52.dp),
-                                    shape = RoundedCornerShape(16.dp),
+                                        .height(44.dp),
+                                    shape = RoundedCornerShape(12.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
                                     )
                                 ) {
-                                    Text("继续", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                    Text("继续", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                 }
                             }
                             else -> {
@@ -194,14 +202,14 @@ internal fun DictationCard(
                                     onClick = onCheck,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(52.dp),
-                                    shape = RoundedCornerShape(16.dp),
+                                        .height(44.dp),
+                                    shape = RoundedCornerShape(12.dp),
                                     enabled = input.isNotBlank(),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
                                     )
                                 ) {
-                                    Text("检查", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                                    Text("检查", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                                 }
                             }
                         }
@@ -210,15 +218,4 @@ internal fun DictationCard(
             }
         }
     }
-}
-
-@Composable
-private fun PoetryTitle(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.displaySmall,
-        color = MaterialTheme.colorScheme.onSurface,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center
-    )
 }
