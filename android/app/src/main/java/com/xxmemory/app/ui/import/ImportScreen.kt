@@ -193,7 +193,7 @@ fun ImportScreen(
         ManualCardDialog(
             onDismiss = { showManualDialog = false },
             isEinkMode = isEinkMode,
-            onConfirm = { q, a, s, d, tags, type, img, aud, phonetic, example, collocations, etymology, hint, rhyme, derivatives, distractors ->
+            onConfirm = { q, a, s, d, tags, type, img, aud, phonetic, example, collocations, etymology, hint, rhyme, derivatives, distractors, mnemonics ->
                 viewModel.importManualCard(
                     question = q,
                     answer = a,
@@ -210,7 +210,8 @@ fun ImportScreen(
                     hint = hint,
                     rhyme = rhyme,
                     derivatives = derivatives,
-                    distractors = distractors
+                    distractors = distractors,
+                    mnemonics = mnemonics
                 )
                 showManualDialog = false
             }
@@ -594,7 +595,7 @@ private fun RecentImportItem(card: Card, viewModel: ImportViewModel, isEinkMode:
 private fun ManualCardDialog(
     onDismiss: () -> Unit,
     isEinkMode: Boolean,
-    onConfirm: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String) -> Unit
+    onConfirm: (String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String) -> Unit
 ) {
     var question by remember { mutableStateOf("") }
     var answer by remember { mutableStateOf("") }
@@ -611,6 +612,7 @@ private fun ManualCardDialog(
     var rhyme by remember { mutableStateOf("") }
     var derivatives by remember { mutableStateOf("") }
     var distractors by remember { mutableStateOf("") }
+    var mnemonics by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(Card.TYPE_QA) }
 
     EinkAlertDialog(
@@ -724,6 +726,14 @@ private fun ManualCardDialog(
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = mnemonics,
+                    onValueChange = { mnemonics = it },
+                    label = { Text("助记 (可选，谐音/词根/联想/图片提示)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "卡片类型",
@@ -794,7 +804,7 @@ private fun ManualCardDialog(
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(question, answer, subject, detail, tags, selectedType, imageUrl, audioUrl, phonetic, example, collocations, etymology, hint, rhyme, derivatives, distractors) },
+                onClick = { onConfirm(question, answer, subject, detail, tags, selectedType, imageUrl, audioUrl, phonetic, example, collocations, etymology, hint, rhyme, derivatives, distractors, mnemonics) },
                 enabled = question.isNotBlank() && answer.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary

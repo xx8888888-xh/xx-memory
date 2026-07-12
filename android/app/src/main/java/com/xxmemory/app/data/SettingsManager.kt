@@ -30,6 +30,14 @@ class SettingsManager(context: Context) {
         get() = prefs.getBoolean("shuffle_cards", false)
         set(value) = prefs.edit().putBoolean("shuffle_cards", value).apply()
 
+    /**
+     * 困难优先智能排序：开启后，复习队列会按照历史正确率、卡片难度和近期失败记录
+     * 把最困难的卡片排在最前面，利用认知资源最充沛时处理高负荷内容。
+     */
+    var difficultFirst: Boolean
+        get() = prefs.getBoolean("difficult_first", false)
+        set(value) = prefs.edit().putBoolean("difficult_first", value).apply()
+
     var showDetailFirst: Boolean
         get() = prefs.getBoolean("show_detail_first", false)
         set(value) = prefs.edit().putBoolean("show_detail_first", value).apply()

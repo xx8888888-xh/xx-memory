@@ -400,7 +400,7 @@ def test_settings(d):
         # 点击父节点中心，避免子节点不可点击导致失效
         try:
             parent = settings_btn.parent()
-            if parent and parent.exists:
+            if parent and parent.exists():
                 clicked_settings = _tap_element_center(d, parent)
         except Exception as e:
             log_write(f"获取设置图标父节点失败: {e}")
@@ -436,6 +436,12 @@ def test_settings(d):
         wait(1)
         s = shot(d, "settings_daily_limit")
         log("设置-每日卡片限制", "PASS", "改为15", s)
+
+    # 困难优先排序开关（新设置项）
+    if scroll_and_click_text(d, "困难优先排序", partial=True, max_swipes=3, start_y=900, end_y=400):
+        wait(0.5)
+        s = shot(d, "settings_difficult_first")
+        log("设置-困难优先排序", "PASS", "点击切换", s)
 
     # 古诗文朗诵开关
     if safe_click_text(d, "启用朗诵阶段", partial=True):

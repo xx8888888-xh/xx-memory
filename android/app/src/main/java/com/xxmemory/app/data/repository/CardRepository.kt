@@ -59,6 +59,9 @@ class CardRepository(
     suspend fun getCountAfter(afterDate: Long): Int =
         reviewLogDao.getCountAfter(afterDate)
 
+    suspend fun getAllReviewLogsSync(): List<ReviewLog> =
+        reviewLogDao.getAllLogsSync()
+
     suspend fun deleteCard(id: Long) = cardDao.deleteCard(id)
 
     fun getFavoriteCards(): Flow<List<Card>> = cardDao.getFavoriteCards()

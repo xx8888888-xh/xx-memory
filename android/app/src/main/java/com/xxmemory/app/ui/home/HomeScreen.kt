@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -59,6 +60,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.xxmemory.app.XxMemoryApplication
 import com.xxmemory.app.data.entity.Card
@@ -144,6 +146,16 @@ fun HomeScreen(
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     CardCountBadge(totalCards = uiState.totalCards, dueCount = uiState.dueCount, todayReviewed = uiState.todayReviewed, isEinkMode = isEinkMode)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    StreakSection(
+                        streakDays = uiState.streakDays,
+                        dailyGoal = uiState.dailyGoal,
+                        todayReviewed = uiState.todayReviewed,
+                        dailyGoalProgress = uiState.dailyGoalProgress,
+                        isGoalAchievedToday = uiState.isGoalAchievedToday,
+                        weeklyStreakStats = uiState.weeklyStreakStats,
+                        isEinkMode = isEinkMode
+                    )
                     Spacer(modifier = Modifier.height(12.dp))
                     SearchBar(
                         query = uiState.searchQuery,
@@ -447,6 +459,133 @@ private fun CardCountBadge(totalCards: Int, dueCount: Int, todayReviewed: Int, i
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StreakSection(
+    streakDays: Int,
+    dailyGoal: Int,
+    todayReviewed: Int,
+    dailyGoalProgress: Float,
+    isGoalAchievedToday: Boolean,
+    weeklyStreakStats: List<WeeklyStreakStat>,
+    isEinkMode: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "连续打卡 ${streakDays} 天",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (isGoalAchievedToday) "今日目标已达成" else "今日目标：复习 ${dailyGoal} 张",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (isGoalAchievedToday) {
+                            if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                        } else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .border(
+                            width = 1.5.dp,
+                            color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "${(dailyGoalProgress * 100).toInt()}%",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isEinkMode) Color.Black else MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Progress bar
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(dailyGoalProgress)
+                        .fillMaxHeight()
+                        .background(if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Weekly streak heatmap
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                weeklyStreakStats.forEach { stat ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .border(
+                                    width = if (stat.isToday) 1.5.dp else 0.5.dp,
+                                    color = when {
+                                        stat.isToday -> if (isEinkMode) Color.Black else MaterialTheme.colorScheme.primary
+                                        stat.isReviewed -> if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                                        else -> MaterialTheme.colorScheme.outlineVariant
+                                    },
+                                    shape = RoundedCornerShape(6.dp)
+                                )
+                                .background(
+                                    if (stat.isReviewed) {
+                                        if (isEinkMode) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                                    } else MaterialTheme.colorScheme.background
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (stat.isReviewed) {
+                                Text(
+                                    text = "✓",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                                    fontSize = 10.sp
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stat.dayName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
     }
@@ -1158,6 +1297,7 @@ private fun CardEditDialog(
     var answer by remember { mutableStateOf(card.answer) }
     var detail by remember { mutableStateOf(card.detail) }
     var hint by remember { mutableStateOf(card.hint) }
+    var mnemonics by remember { mutableStateOf(card.mnemonics) }
 
     EinkAlertDialog(
         onDismissRequest = onDismiss,
@@ -1191,11 +1331,19 @@ private fun CardEditDialog(
                     label = { Text("提示") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = mnemonics,
+                    onValueChange = { mnemonics = it },
+                    label = { Text("助记 (谐音/词根/联想)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
             }
         },
         confirmButton = {
             Button(onClick = {
-                onSave(card.copy(question = question, answer = answer, detail = detail, hint = hint))
+                onSave(card.copy(question = question, answer = answer, detail = detail, hint = hint, mnemonics = mnemonics))
             }) { Text("保存") }
         },
         dismissButton = {

@@ -24,7 +24,8 @@
     "example": "He abandoned his car in the snow.",
     "hint": "a- 表示离开，bandon 谐音'板凳'→ 把板凳扔掉",
     "tags": "英语,考研,四级",
-    "distractors": "放弃权利,遗弃宠物,抛弃责任"
+    "distractors": "放弃权利,遗弃宠物,抛弃责任",
+    "mnemonics": "abandon = a(一个) + bandon(板凳)：一个板凳被扔掉了 → 放弃、遗弃。考研出现频率极高，常考'abandon oneself to 沉溺于'。"
   },
   {
     "question": "serendipity",
@@ -46,7 +47,8 @@
     "example": "Photosynthesis converts light energy into chemical energy.",
     "hint": "photo-光，synthesis-合成",
     "tags": "生物,科学",
-    "distractors": "呼吸作用,蒸腾作用,消化吸收"
+    "distractors": "呼吸作用,蒸腾作用,消化吸收",
+    "mnemonics": "photo(照片/光) + synthesis(合成)：植物用光做合成 → 光合作用。与respiration(呼吸作用)相反，一个储能、一个放能。"
   },
   {
     "question": "mitochondria",

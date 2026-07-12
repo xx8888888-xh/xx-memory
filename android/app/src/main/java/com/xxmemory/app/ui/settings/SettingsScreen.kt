@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.RecordVoiceOver
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SpeakerNotes
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.AlertDialog
@@ -169,6 +170,15 @@ fun SettingsScreen(
                 checked = uiState.shuffleCards,
                 isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.toggleShuffle(it) }
+            )
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            SwitchItem(
+                icon = Icons.Filled.TrendingUp,
+                title = "困难优先排序",
+                subtitle = "根据历史正确率和卡片难度把困难卡片排在前面",
+                checked = uiState.difficultFirst,
+                isEinkMode = isEinkMode,
+                onCheckedChange = { viewModel.toggleDifficultFirst(it) }
             )
             Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
             SwitchItem(

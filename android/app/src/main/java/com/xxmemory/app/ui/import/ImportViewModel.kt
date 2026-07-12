@@ -193,7 +193,8 @@ class ImportViewModel : ViewModel() {
         hint: String = "",
         rhyme: String = "",
         derivatives: String = "",
-        distractors: String = ""
+        distractors: String = "",
+        mnemonics: String = ""
     ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isImporting = true, importMessage = null)
@@ -214,7 +215,8 @@ class ImportViewModel : ViewModel() {
                     hint = hint,
                     rhyme = rhyme,
                     derivatives = derivatives,
-                    distractors = distractors
+                    distractors = distractors,
+                    mnemonics = mnemonics
                 )
                 repository.insertCard(card)
                 _uiState.value = _uiState.value.copy(
@@ -284,6 +286,9 @@ class ImportViewModel : ViewModel() {
                 ?: 0,
             distractors = json.get("distractors")?.asString
                 ?: json.get("options")?.asString
+                ?: "",
+            mnemonics = json.get("mnemonics")?.asString
+                ?: json.get("mnemonic")?.asString
                 ?: ""
         )
     }

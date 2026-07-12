@@ -27,7 +27,20 @@ data class HomeUiState(
     val selectedDayCards: List<Card> = emptyList(),
     val searchQuery: String = "",
     val editingCard: Card? = null,
-    val isLoading: Boolean = true
+    val isLoading: Boolean = true,
+
+    // Streak & daily goal
+    val streakDays: Int = 0,
+    val dailyGoal: Int = 0,
+    val dailyGoalProgress: Float = 0f,
+    val isGoalAchievedToday: Boolean = false,
+    val weeklyStreakStats: List<WeeklyStreakStat> = emptyList()
+)
+
+data class WeeklyStreakStat(
+    val dayName: String,
+    val isReviewed: Boolean,
+    val isToday: Boolean
 )
 
 data class DayDueStat(
@@ -77,8 +90,18 @@ class HomeViewModel : ViewModel() {
                 } else {
                     Int.MAX_VALUE
                 }
+                val dailyGoal = if (settings.dailyCardLimitEnabled) {
+                    minOf(limit, dueCards.size + todayReviewed).coerceAtLeast(1)
+                } else {
+                    todayReviewed.coerceAtLeast(1)
+                }
+                val dailyGoalProgress = if (dailyGoal > 0) {
+                    (todayReviewed.toFloat() / dailyGoal).coerceIn(0f, 1f)
+                } else 0f
 
                 val nextSevenDays = buildNextSevenDays(startOfDay)
+                val streak = calculateStreak(startOfDay)
+                val weeklyStreakStats = buildWeeklyStreakStats(startOfDay)
 
                 _uiState.value = _uiState.value.copy(
                     dueCards = dueCards,
@@ -87,7 +110,12 @@ class HomeViewModel : ViewModel() {
                     todayReviewed = todayReviewed,
                     subjects = subjects,
                     nextSevenDays = nextSevenDays,
-                    isLoading = false
+                    isLoading = false,
+                    streakDays = streak,
+                    dailyGoal = dailyGoal,
+                    dailyGoalProgress = dailyGoalProgress,
+                    isGoalAchievedToday = todayReviewed >= dailyGoal && dailyGoal > 0,
+                    weeklyStreakStats = weeklyStreakStats
                 )
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "loadData failed", e)
@@ -115,6 +143,48 @@ class HomeViewModel : ViewModel() {
                     isToday = i == 0
                 )
             )
+        }
+        return result
+    }
+
+    private suspend fun calculateStreak(todayStart: Long): Int {
+        var streak = 0
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = todayStart
+        for (i in 0..365) {
+            val dayStart = CardRepository.getStartOfDay(cal.timeInMillis)
+            val dayEnd = CardRepository.getNextDayStart(dayStart)
+            val count = repository.getCountForDay(dayStart, dayEnd)
+            if (count > 0) {
+                streak++
+                cal.add(Calendar.DAY_OF_YEAR, -1)
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    private suspend fun buildWeeklyStreakStats(todayStart: Long): List<WeeklyStreakStat> {
+        val dayNames = listOf("一", "二", "三", "四", "五", "六", "日")
+        val result = mutableListOf<WeeklyStreakStat>()
+        val cal = Calendar.getInstance()
+        cal.timeInMillis = todayStart
+        // Move to Monday of current week
+        cal.firstDayOfWeek = Calendar.MONDAY
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        for (i in 0..6) {
+            val dayStart = CardRepository.getStartOfDay(cal.timeInMillis)
+            val dayEnd = CardRepository.getNextDayStart(dayStart)
+            val count = repository.getCountForDay(dayStart, dayEnd)
+            result.add(
+                WeeklyStreakStat(
+                    dayName = dayNames[i],
+                    isReviewed = count > 0,
+                    isToday = dayStart == todayStart
+                )
+            )
+            cal.add(Calendar.DAY_OF_YEAR, 1)
         }
         return result
     }

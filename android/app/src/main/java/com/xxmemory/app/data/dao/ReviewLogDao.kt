@@ -26,4 +26,7 @@ interface ReviewLogDao {
 
     @Query("SELECT COUNT(*) FROM review_logs WHERE review_date >= :afterDate")
     suspend fun getCountAfter(afterDate: Long): Int
+
+    @Query("SELECT * FROM review_logs ORDER BY review_date DESC")
+    suspend fun getAllLogsSync(): List<ReviewLog>
 }

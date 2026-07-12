@@ -107,7 +107,11 @@ data class Card(
 
     /** 单词类型四选一干扰项，逗号分隔（优先于从卡片池生成） */
     @ColumnInfo(name = "distractors")
-    val distractors: String = ""
+    val distractors: String = "",
+
+    /** 助记内容：用户可自定义的谐音、词根、联想、图片提示等 */
+    @ColumnInfo(name = "mnemonics")
+    val mnemonics: String = ""
 ) {
     companion object {
         const val TYPE_QA = "qa"

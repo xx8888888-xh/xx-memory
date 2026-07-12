@@ -23,6 +23,7 @@ data class SettingsUiState(
     val einkMode: Boolean = false,
     val dailyReminder: Boolean = true,
     val shuffleCards: Boolean = false,
+    val difficultFirst: Boolean = false,
     val showDetailFirst: Boolean = false,
     val algorithmType: String = "SM-2",
     val reminderTimeSlots: List<String> = listOf("20:00"),
@@ -57,6 +58,7 @@ class SettingsViewModel : ViewModel() {
             einkMode = settingsManager.einkMode,
             dailyReminder = settingsManager.dailyReminder,
             shuffleCards = settingsManager.shuffleCards,
+            difficultFirst = settingsManager.difficultFirst,
             showDetailFirst = settingsManager.showDetailFirst,
             algorithmType = settingsManager.algorithmType,
             reminderTimeSlots = parseSlots(settingsManager.reminderTimeSlots),
@@ -161,6 +163,11 @@ class SettingsViewModel : ViewModel() {
     fun toggleShuffle(enabled: Boolean) {
         settingsManager.shuffleCards = enabled
         _uiState.value = _uiState.value.copy(shuffleCards = enabled)
+    }
+
+    fun toggleDifficultFirst(enabled: Boolean) {
+        settingsManager.difficultFirst = enabled
+        _uiState.value = _uiState.value.copy(difficultFirst = enabled)
     }
 
     fun toggleShowDetailFirst(enabled: Boolean) {

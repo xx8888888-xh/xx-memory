@@ -1117,6 +1117,17 @@ private fun DetailCard(
                 fontWeight = FontWeight.Bold
             )
 
+            // User-editable mnemonics for elaborative encoding.
+            if (card.mnemonics.isNotBlank()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                InfoCard(
+                    icon = Icons.Filled.Lightbulb,
+                    title = "助记",
+                    content = card.mnemonics,
+                    isEinkMode = isEinkMode
+                )
+            }
+
             // BBDC: prioritize real-context example sentence right after answer.
             if (reviewMode == ReviewMode.BBDC && card.example.isNotBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))

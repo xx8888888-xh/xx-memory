@@ -8,6 +8,7 @@ import com.xxmemory.app.data.AppDatabase
 import com.xxmemory.app.data.entity.Card
 import com.xxmemory.app.data.entity.ReviewLog
 import com.xxmemory.app.data.repository.CardRepository
+import com.xxmemory.app.domain.DifficultFirstSorter
 import com.xxmemory.app.domain.EbbinghausAlgorithm
 import com.xxmemory.app.domain.SchedulerUtils
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -132,15 +133,23 @@ class ReviewViewModel : ViewModel() {
                 allCardsForDistractors = repository.getAllCardsSync()
                     .filter { !it.mastered }
 
+                // Apply difficult-first intelligent sorting before limit/shuffle.
+                val sortedCards = if (settingsManager.difficultFirst) {
+                    val logs = repository.getAllReviewLogsSync()
+                    DifficultFirstSorter.sort(cards, logs, settingsManager.algorithmType, now)
+                } else {
+                    cards
+                }
+
                 // Apply daily card limit
                 val limit = if (settingsManager.dailyCardLimitEnabled) {
                     settingsManager.dailyCardLimit.coerceAtLeast(1)
                 } else {
                     Int.MAX_VALUE
                 }
-                val limitedCards = cards.take(limit)
+                val limitedCards = sortedCards.take(limit)
 
-                // Apply shuffle
+                // Apply shuffle (after difficult-first sorting, randomizes among selected cards)
                 val finalCards = if (settingsManager.shuffleCards) limitedCards.shuffled() else limitedCards
 
                 val firstCard = finalCards.firstOrNull()
