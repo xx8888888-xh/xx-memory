@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.BrightnessMedium
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RecordVoiceOver
@@ -572,6 +573,15 @@ fun SettingsScreen(
                 checked = uiState.poetryRecitationEnabled,
                 isEinkMode = isEinkMode,
                 onCheckedChange = { viewModel.togglePoetryRecitation(it) }
+            )
+            Divider(color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+            SwitchItem(
+                icon = Icons.Filled.Lightbulb,
+                title = "首字母提示",
+                subtitle = "独立回忆/自评时显示首字母或首字，利用部分线索效应辅助回忆",
+                checked = uiState.firstLetterHintEnabled,
+                isEinkMode = isEinkMode,
+                onCheckedChange = { viewModel.toggleFirstLetterHint(it) }
             )
         }
         Spacer(modifier = Modifier.height(20.dp))

@@ -45,3 +45,13 @@ app/release/
 # 调试文件
 captures/
 *.hprof
+
+# MuMu 自动化测试运行时产物（保留脚本本身）
+.agents/skills/mumu-control/tmp/*.png
+.agents/skills/mumu-control/tmp/*.log
+.agents/skills/mumu-control/tmp/*.json
+.agents/skills/mumu-control/tmp/*.xml
+.trae/skills/mumu-control/tmp/*.png
+.trae/skills/mumu-control/tmp/*.log
+.trae/skills/mumu-control/tmp/*.json
+.trae/skills/mumu-control/tmp/*.xml

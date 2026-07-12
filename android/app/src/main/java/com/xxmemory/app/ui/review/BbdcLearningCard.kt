@@ -23,9 +23,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,9 +43,12 @@ internal fun BbdcLearningCard(
     card: CardEntity,
     step: ReviewStep,
     isEinkMode: Boolean,
+    showFirstLetterHint: Boolean = false,
+    firstLetterHintEnabled: Boolean = true,
     onExampleClear: () -> Unit,
     onExampleWrong: () -> Unit,
-    onSelfAssessment: (SelfAssessment) -> Unit
+    onSelfAssessment: (SelfAssessment) -> Unit,
+    onToggleFirstLetterHint: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxSize(),
@@ -97,13 +102,19 @@ internal fun BbdcLearningCard(
                     ReviewStep.INDEPENDENT_RECALL -> IndependentRecallContent(
                         card = card,
                         isEinkMode = isEinkMode,
-                        onSelfAssessment = onSelfAssessment
+                        showFirstLetterHint = showFirstLetterHint,
+                        firstLetterHintEnabled = firstLetterHintEnabled,
+                        onSelfAssessment = onSelfAssessment,
+                        onToggleFirstLetterHint = onToggleFirstLetterHint
                     )
 
                     ReviewStep.SELF_ASSESSMENT -> SelfAssessmentContent(
                         card = card,
                         isEinkMode = isEinkMode,
-                        onSelfAssessment = onSelfAssessment
+                        showFirstLetterHint = showFirstLetterHint,
+                        firstLetterHintEnabled = firstLetterHintEnabled,
+                        onSelfAssessment = onSelfAssessment,
+                        onToggleFirstLetterHint = onToggleFirstLetterHint
                     )
 
                     else -> {}
@@ -191,7 +202,10 @@ private fun ExampleReviewContent(
 private fun IndependentRecallContent(
     card: CardEntity,
     isEinkMode: Boolean,
-    onSelfAssessment: (SelfAssessment) -> Unit
+    showFirstLetterHint: Boolean = false,
+    firstLetterHintEnabled: Boolean = true,
+    onSelfAssessment: (SelfAssessment) -> Unit,
+    onToggleFirstLetterHint: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
@@ -201,6 +215,22 @@ private fun IndependentRecallContent(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
+        if (showFirstLetterHint) {
+            Spacer(modifier = Modifier.height(12.dp))
+            FirstLetterHintBox(card = card, isEinkMode = isEinkMode)
+        }
+        if (firstLetterHintEnabled && !showFirstLetterHint) {
+            Spacer(modifier = Modifier.height(12.dp))
+            TextButton(
+                onClick = onToggleFirstLetterHint,
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("显示首字母提示", fontWeight = FontWeight.SemiBold)
+            }
+        }
         Spacer(modifier = Modifier.height(24.dp))
         SelfAssessmentButtons(
             isEinkMode = isEinkMode,
@@ -213,13 +243,83 @@ private fun IndependentRecallContent(
 private fun SelfAssessmentContent(
     card: CardEntity,
     isEinkMode: Boolean,
-    onSelfAssessment: (SelfAssessment) -> Unit
+    showFirstLetterHint: Boolean = false,
+    firstLetterHintEnabled: Boolean = true,
+    onSelfAssessment: (SelfAssessment) -> Unit,
+    onToggleFirstLetterHint: () -> Unit = {}
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
+        if (showFirstLetterHint) {
+            FirstLetterHintBox(card = card, isEinkMode = isEinkMode)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+        if (firstLetterHintEnabled && !showFirstLetterHint) {
+            TextButton(
+                onClick = onToggleFirstLetterHint,
+                modifier = Modifier.fillMaxWidth(),
+                colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("显示首字母提示", fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
         SelfAssessmentButtons(
             isEinkMode = isEinkMode,
             onSelfAssessment = onSelfAssessment
         )
+    }
+}
+
+@Composable
+private fun FirstLetterHintBox(card: CardEntity, isEinkMode: Boolean) {
+    val hintText: String = remember(card.id) {
+        val answer = card.answer.trim()
+        when {
+            answer.isEmpty() -> "?"
+            answer.first().code in 0x4E00..0x9FFF -> {
+                // Chinese: show first character + dots for remaining characters
+                val firstChar = answer.first()
+                val restCount = answer.length - 1
+                val dots = if (restCount > 0) "·".repeat(restCount.coerceAtMost(8)) else ""
+                "$firstChar $dots"
+            }
+            else -> {
+                // English/Latin: show first letter + dots
+                val words = answer.split(" ")
+                val wordHints = words.map { word ->
+                    if (word.isNotEmpty()) word.first().uppercaseChar() + "·".repeat((word.length - 1).coerceAtMost(6))
+                    else ""
+                }
+                wordHints.joinToString(" ")
+            }
+        }
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isEinkMode) 0.5f else 0.6f))
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "首字母提示",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = hintText,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 

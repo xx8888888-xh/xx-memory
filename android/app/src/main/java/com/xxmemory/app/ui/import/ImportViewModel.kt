@@ -102,8 +102,15 @@ class ImportViewModel : ViewModel() {
                 }
 
                 if (parser != null) {
-                    val cards = parser.parse(content)
-                    cards.forEach { repository.insertCard(it) }
+                    val cards = parser.parse(content).filter { it.question.isNotBlank() && it.answer.isNotBlank() }
+                    if (cards.isEmpty()) {
+                        _uiState.value = _uiState.value.copy(
+                            isImporting = false,
+                            importMessage = "未解析到有效卡片，请检查文件内容格式"
+                        )
+                        return@launch
+                    }
+                    repository.insertAllCards(cards)
                     _uiState.value = _uiState.value.copy(
                         isImporting = false,
                         importMessage = "成功导入 ${cards.size} 张卡片 (${parser.formatName}格式)",
@@ -158,11 +165,11 @@ class ImportViewModel : ViewModel() {
                 if (cards.isEmpty()) {
                     _uiState.value = _uiState.value.copy(
                         isImporting = false,
-                        importMessage = "未解析到有效卡片，请检查 JSON 格式"
+                        importMessage = "未解析到有效卡片，请检查 JSON 格式：question/answer 不能为空"
                     )
                     return@launch
                 }
-                cards.forEach { repository.insertCard(it) }
+                repository.insertAllCards(cards)
                 _uiState.value = _uiState.value.copy(
                     isImporting = false,
                     importMessage = "成功导入 ${cards.size} 张卡片",
@@ -234,12 +241,13 @@ class ImportViewModel : ViewModel() {
 
     private fun parseCardsFromJson(json: String): List<Card> {
         val root = JsonParser.parseString(json) ?: throw IllegalArgumentException("JSON格式错误")
-        val cardsJson = if (root is JsonObject && root.has("cards")) {
-            root.getAsJsonArray("cards")
-        } else if (root is JsonArray) {
-            root
-        } else {
-            throw IllegalArgumentException("JSON格式错误：未找到卡片数组")
+        val cardsJson = when {
+            root is JsonObject && root.has("cards") -> {
+                val cardsElement = root.get("cards")
+                if (cardsElement is JsonArray) cardsElement else throw IllegalArgumentException("JSON格式错误：cards 必须是数组")
+            }
+            root is JsonArray -> root
+            else -> throw IllegalArgumentException("JSON格式错误：未找到卡片数组")
         }
 
         val cards = mutableListOf<Card>()
@@ -252,12 +260,12 @@ class ImportViewModel : ViewModel() {
     }
 
     private fun mapJsonToCard(json: JsonObject): Card {
-        val question = json.get("question")?.asString
+        val question = (json.get("question")?.asString
             ?: json.get("front")?.asString
-            ?: ""
-        val answer = json.get("answer")?.asString
+            ?: "").trim()
+        val answer = (json.get("answer")?.asString
             ?: json.get("back")?.asString
-            ?: ""
+            ?: "").trim()
         return Card(
             question = question,
             answer = answer,

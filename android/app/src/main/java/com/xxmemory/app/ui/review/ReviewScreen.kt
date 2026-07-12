@@ -20,6 +20,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoStories
 import androidx.compose.material.icons.filled.Check
@@ -58,7 +61,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -84,6 +89,7 @@ fun ReviewScreen(
     val isEinkMode = rememberEinkMode()
     val isBaicizhanDeepMode = remember { settings.baicizhanDeepMode }
     val isBbdcImmersiveMode = remember { settings.bbdcImmersiveMode }
+    val haptic = LocalHapticFeedback.current
 
     var ttsReady by remember { mutableStateOf(false) }
     var showMoreMenu by remember { mutableStateOf(false) }
@@ -223,8 +229,12 @@ fun ReviewScreen(
         if (uiState.isComplete) {
             ReviewCompleteState(
                 completedCount = uiState.completedCount,
+                wrongCount = uiState.wrongCards.size,
                 isEinkMode = isEinkMode,
-                onReload = { viewModel.loadDueCards() }
+                onReload = { viewModel.loadDueCards() },
+                onReviewWrongCards = if (uiState.wrongCards.isNotEmpty()) {
+                    { viewModel.loadWrongCardsForReview() }
+                } else null
             )
         } else {
             val card = uiState.currentCard ?: return
@@ -263,15 +273,15 @@ fun ReviewScreen(
                         BbdcImmersiveRecallCard(
                             card = card,
                             isEinkMode = isEinkMode,
-                            onKnow = { viewModel.onKnowCard() },
-                            onDontKnow = { viewModel.onDontKnowCard() }
+                            onKnow = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); viewModel.onKnowCard() },
+                            onDontKnow = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); viewModel.onDontKnowCard() }
                         )
                     } else {
                         BbdcRecallCard(
                             card = card,
                             isEinkMode = isEinkMode,
-                            onKnow = { viewModel.onKnowCard() },
-                            onDontKnow = { viewModel.onDontKnowCard() }
+                            onKnow = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); viewModel.onKnowCard() },
+                            onDontKnow = { haptic.performHapticFeedback(HapticFeedbackType.LongPress); viewModel.onDontKnowCard() }
                         )
                     }
 
@@ -280,6 +290,7 @@ fun ReviewScreen(
                         isEinkMode = isEinkMode,
                         showImage = showImageInQuestion,
                         onReveal = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                             when (uiState.reviewMode) {
                                 ReviewMode.BAICIZHAN -> viewModel.onBaicizhanShowDetail()
                                 else -> viewModel.flipCard()
@@ -294,7 +305,10 @@ fun ReviewScreen(
                             selectedOption = uiState.selectedOption,
                             isEinkMode = isEinkMode,
                             showImage = showImageInQuestion,
-                            onSelect = { viewModel.selectOption(it) },
+                            onSelect = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                viewModel.selectOption(it)
+                            },
                             wrongAttempts = uiState.wrongAttempts
                         )
                     }
@@ -305,9 +319,12 @@ fun ReviewScreen(
                         card = card,
                         step = uiState.step,
                         isEinkMode = isEinkMode,
+                        showFirstLetterHint = uiState.showFirstLetterHint,
+                        firstLetterHintEnabled = settings.firstLetterHintEnabled,
                         onExampleClear = { viewModel.assessExampleReview(clear = true) },
                         onExampleWrong = { viewModel.assessExampleReview(clear = false) },
-                        onSelfAssessment = { viewModel.selectSelfAssessment(it) }
+                        onSelfAssessment = { viewModel.selectSelfAssessment(it) },
+                        onToggleFirstLetterHint = { viewModel.toggleFirstLetterHint() }
                     )
 
                     ReviewStep.DETAIL -> DetailCard(
@@ -360,13 +377,34 @@ fun ReviewScreen(
                     isEinkMode = isEinkMode,
                     flashcardPreviews = flashcardPreviews,
                     selectionPreview = selectionPreview,
-                    onReveal = { viewModel.flipCard() },
-                    onAssess = { quality -> viewModel.assessCard(quality) },
-                    onAssessSelection = { viewModel.assessCurrentFromSelection() },
-                    onBaicizhanKnow = { viewModel.onBaicizhanKnow() },
-                    onBaicizhanShowDetail = { viewModel.onBaicizhanShowDetail() },
-                    onChangeSelfAssessment = { viewModel.changeSelfAssessment(it) },
-                    onSubmitBbdcAssessment = { viewModel.submitBbdcAssessment() }
+                    onReveal = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.flipCard()
+                    },
+                    onAssess = { quality ->
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.assessCard(quality)
+                    },
+                    onAssessSelection = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.assessCurrentFromSelection()
+                    },
+                    onBaicizhanKnow = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.onBaicizhanKnow()
+                    },
+                    onBaicizhanShowDetail = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.onBaicizhanShowDetail()
+                    },
+                    onChangeSelfAssessment = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.changeSelfAssessment(it)
+                    },
+                    onSubmitBbdcAssessment = {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        viewModel.submitBbdcAssessment()
+                    }
                 )
             }
 
@@ -901,7 +939,24 @@ private fun OptionsCard(
 ) {
     val scrollState = rememberScrollState()
     Card(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .onKeyEvent { event ->
+                if (selectedOption == null) {
+                    val index = when (event.key) {
+                        Key.One, Key.NumPad1 -> 0
+                        Key.Two, Key.NumPad2 -> 1
+                        Key.Three, Key.NumPad3 -> 2
+                        Key.Four, Key.NumPad4 -> 3
+                        else -> -1
+                    }
+                    if (index in options.indices) {
+                        onSelect(options[index])
+                        return@onKeyEvent true
+                    }
+                }
+                false
+            },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isEinkMode) 0.dp else 4.dp)
@@ -1000,7 +1055,7 @@ private fun OptionsCard(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(24.dp)
+                                .size(28.dp)
                                 .clip(CircleShape)
                                 .background(borderColor.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -1010,7 +1065,15 @@ private fun OptionsCard(
                                     imageVector = if (isAnswerCorrect) Icons.Filled.Check else Icons.Filled.Close,
                                     contentDescription = null,
                                     tint = borderColor,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            } else {
+                                val optionIndex = options.indexOf(option)
+                                Text(
+                                    text = "${optionIndex + 1}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = borderColor,
+                                    fontWeight = FontWeight.Bold
                                 )
                             }
                         }
@@ -1038,6 +1101,7 @@ private fun DetailCard(
     reviewMode: ReviewMode
 ) {
     val scrollState = rememberScrollState()
+    var showMoreInfo by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier.fillMaxSize(),
         shape = RoundedCornerShape(24.dp),
@@ -1109,7 +1173,7 @@ private fun DetailCard(
                 }
             )
 
-            // Answer
+            // Answer (core info always visible)
             Text(
                 text = card.answer,
                 style = MaterialTheme.typography.headlineSmall,
@@ -1117,14 +1181,13 @@ private fun DetailCard(
                 fontWeight = FontWeight.Bold
             )
 
-            // User-editable mnemonics for elaborative encoding.
-            if (card.mnemonics.isNotBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                InfoCard(
-                    icon = Icons.Filled.Lightbulb,
-                    title = "助记",
-                    content = card.mnemonics,
-                    isEinkMode = isEinkMode
+            // Detail (always visible if present, as it's usually the core meaning)
+            if (card.detail.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = card.detail,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -1139,80 +1202,100 @@ private fun DetailCard(
                 )
             }
 
-            // Hint (Baicizhan deep mode / when user asked for help)
-            if (showHint && card.hint.isNotBlank() && isDeepMode) {
-                Spacer(modifier = Modifier.height(12.dp))
-                InfoCard(
-                    icon = Icons.Filled.Lightbulb,
-                    title = "提示",
-                    content = card.hint,
-                    isEinkMode = isEinkMode
-                )
+            // Collapsible "More Info" section for auxiliary content
+            if (hasAuxiliaryContent(card, showHint, isDeepMode, reviewMode)) {
+                Spacer(modifier = Modifier.height(8.dp))
+                TextButton(
+                    onClick = { showMoreInfo = !showMoreInfo },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Text(
+                        text = if (showMoreInfo) "收起更多信息 ▲" else "展开更多信息 ▼",
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
 
-            // Detail
-            if (card.detail.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = card.detail,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            if (showMoreInfo) {
+                // User-editable mnemonics for elaborative encoding.
+                if (card.mnemonics.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InfoCard(
+                        icon = Icons.Filled.Lightbulb,
+                        title = "助记",
+                        content = card.mnemonics,
+                        isEinkMode = isEinkMode
+                    )
+                }
 
-            // Example sentence (for non-BBDC modes)
-            if (reviewMode != ReviewMode.BBDC && card.example.isNotBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                InfoCard(
-                    icon = Icons.Filled.SpeakerNotes,
-                    title = "例句",
-                    content = card.example,
-                    isEinkMode = isEinkMode
-                )
-            }
+                // Hint (Baicizhan deep mode / when user asked for help)
+                if (showHint && card.hint.isNotBlank() && isDeepMode) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InfoCard(
+                        icon = Icons.Filled.Lightbulb,
+                        title = "提示",
+                        content = card.hint,
+                        isEinkMode = isEinkMode
+                    )
+                }
 
-            // Collocations
-            if (card.collocations.isNotBlank() && isDeepMode) {
-                Spacer(modifier = Modifier.height(12.dp))
-                InfoCard(
-                    icon = Icons.Filled.School,
-                    title = "词组搭配",
-                    content = card.collocations,
-                    isEinkMode = isEinkMode
-                )
-            }
+                // Example sentence (for non-BBDC modes)
+                if (reviewMode != ReviewMode.BBDC && card.example.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InfoCard(
+                        icon = Icons.Filled.SpeakerNotes,
+                        title = "例句",
+                        content = card.example,
+                        isEinkMode = isEinkMode
+                    )
+                }
 
-            // Etymology
-            if (card.etymology.isNotBlank() && isDeepMode) {
-                Spacer(modifier = Modifier.height(12.dp))
-                InfoCard(
-                    icon = Icons.Filled.HelpOutline,
-                    title = "词根词缀",
-                    content = card.etymology,
-                    isEinkMode = isEinkMode
-                )
-            }
+                // Collocations
+                if (card.collocations.isNotBlank() && isDeepMode) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InfoCard(
+                        icon = Icons.Filled.School,
+                        title = "词组搭配",
+                        content = card.collocations,
+                        isEinkMode = isEinkMode
+                    )
+                }
 
-            // Rhyme hint
-            if (card.rhyme.isNotBlank() && isDeepMode) {
-                Spacer(modifier = Modifier.height(12.dp))
-                InfoCard(
-                    icon = Icons.Filled.Edit,
-                    title = "押韵 / 联想",
-                    content = card.rhyme,
-                    isEinkMode = isEinkMode
-                )
-            }
+                // Etymology
+                if (card.etymology.isNotBlank() && isDeepMode) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InfoCard(
+                        icon = Icons.Filled.HelpOutline,
+                        title = "词根词缀",
+                        content = card.etymology,
+                        isEinkMode = isEinkMode
+                    )
+                }
 
-            // Derivatives
-            if (card.derivatives.isNotBlank()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                InfoCard(
-                    icon = Icons.Filled.AutoStories,
-                    title = "派生词",
-                    content = card.derivatives,
-                    isEinkMode = isEinkMode
-                )
+                // Rhyme hint
+                if (card.rhyme.isNotBlank() && isDeepMode) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InfoCard(
+                        icon = Icons.Filled.Edit,
+                        title = "押韵 / 联想",
+                        content = card.rhyme,
+                        isEinkMode = isEinkMode
+                    )
+                }
+
+                // Derivatives
+                if (card.derivatives.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    InfoCard(
+                        icon = Icons.Filled.AutoStories,
+                        title = "派生词",
+                        content = card.derivatives,
+                        isEinkMode = isEinkMode
+                    )
+                }
             }
 
             // Image (always shown on detail page to reinforce memory)
@@ -1230,6 +1313,21 @@ private fun DetailCard(
             }
         }
     }
+}
+
+private fun hasAuxiliaryContent(
+    card: CardEntity,
+    showHint: Boolean,
+    isDeepMode: Boolean,
+    reviewMode: ReviewMode
+): Boolean {
+    return card.mnemonics.isNotBlank() ||
+            (showHint && card.hint.isNotBlank() && isDeepMode) ||
+            (reviewMode != ReviewMode.BBDC && card.example.isNotBlank()) ||
+            (card.collocations.isNotBlank() && isDeepMode) ||
+            (card.etymology.isNotBlank() && isDeepMode) ||
+            (card.rhyme.isNotBlank() && isDeepMode) ||
+            card.derivatives.isNotBlank()
 }
 
 @Composable
@@ -1736,8 +1834,10 @@ private fun EmptyReviewState(isEinkMode: Boolean, onReload: () -> Unit) {
 @Composable
 private fun ReviewCompleteState(
     completedCount: Int,
+    wrongCount: Int = 0,
     isEinkMode: Boolean,
-    onReload: () -> Unit
+    onReload: () -> Unit,
+    onReviewWrongCards: (() -> Unit)? = null
 ) {
     Box(
         modifier = Modifier
@@ -1765,7 +1865,32 @@ private fun ReviewCompleteState(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (wrongCount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "$wrongCount 张需要加强",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error
+                )
+            }
             Spacer(modifier = Modifier.height(24.dp))
+            if (wrongCount > 0 && onReviewWrongCards != null) {
+                Button(
+                    onClick = onReviewWrongCards,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Filled.Close, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("复习错题 ($wrongCount)", fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
             OutlinedButton(
                 onClick = onReload,
                 shape = RoundedCornerShape(12.dp),

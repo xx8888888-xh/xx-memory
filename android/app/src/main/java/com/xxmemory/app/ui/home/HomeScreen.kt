@@ -90,6 +90,8 @@ fun HomeScreen(
     val isEinkMode = rememberEinkMode()
     val lifecycleOwner = LocalLifecycleOwner.current
     var showCalendarDialog by remember { mutableStateOf(false) }
+    val settingsManager = remember { XxMemoryApplication.instance.settingsManager }
+    var showOnboarding by remember { mutableStateOf(!settingsManager.onboardingCompleted) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -145,7 +147,7 @@ fun HomeScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(12.dp))
-                    CardCountBadge(totalCards = uiState.totalCards, dueCount = uiState.dueCount, todayReviewed = uiState.todayReviewed, isEinkMode = isEinkMode)
+                    CardCountBadge(totalCards = uiState.totalCards, dueCount = uiState.totalDueCount, todayReviewed = uiState.todayReviewed, isEinkMode = isEinkMode)
                     Spacer(modifier = Modifier.height(12.dp))
                     StreakSection(
                         streakDays = uiState.streakDays,
@@ -179,7 +181,7 @@ fun HomeScreen(
                 item {
                     ProgressSection(
                         todayReviewed = uiState.todayReviewed,
-                        dueCount = uiState.dueCount,
+                        dailyGoal = uiState.dailyGoal,
                         isEinkMode = isEinkMode
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -349,6 +351,16 @@ fun HomeScreen(
                     viewModel.selectCalendarDay(null)
                 },
                 isEinkMode = isEinkMode
+            )
+        }
+
+        if (showOnboarding) {
+            OnboardingDialog(
+                isEinkMode = isEinkMode,
+                onDismiss = {
+                    settingsManager.onboardingCompleted = true
+                    showOnboarding = false
+                }
             )
         }
 
@@ -621,7 +633,7 @@ private fun StartReviewButton(dueCount: Int, onClick: () -> Unit, isEinkMode: Bo
 }
 
 @Composable
-private fun ProgressSection(todayReviewed: Int, dueCount: Int, isEinkMode: Boolean) {
+private fun ProgressSection(todayReviewed: Int, dailyGoal: Int, isEinkMode: Boolean) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -638,8 +650,8 @@ private fun ProgressSection(todayReviewed: Int, dueCount: Int, isEinkMode: Boole
                 modifier = Modifier.size(64.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val progress = if (todayReviewed + dueCount > 0) {
-                    todayReviewed.toFloat() / (todayReviewed + dueCount)
+                val progress = if (dailyGoal > 0) {
+                    (todayReviewed.toFloat() / dailyGoal).coerceIn(0f, 1f)
                 } else 0f
                 if (isEinkMode) {
                     Text(
@@ -673,7 +685,7 @@ private fun ProgressSection(todayReviewed: Int, dueCount: Int, isEinkMode: Boole
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "已复习 $todayReviewed / ${todayReviewed + dueCount} 张",
+                    text = "已复习 $todayReviewed / $dailyGoal 张",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -757,6 +769,62 @@ private fun NextWeekReviewSection(
             }
         }
     }
+}
+
+@Composable
+private fun OnboardingDialog(
+    isEinkMode: Boolean,
+    onDismiss: () -> Unit
+) {
+    EinkAlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("欢迎使用 智能记忆助手") },
+        text = {
+            Column {
+                Text(
+                    text = "这是一款基于科学记忆算法的智能复习工具，帮助你高效记忆任何知识。",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "三种复习模式",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "• 闪卡模式：传统的正反面卡片，适合快速浏览\n• 百词斩模式：四选一选择题，适合检验识别能力\n• 不背单词模式：回忆→例句→自评，适合深度学习",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "快速开始",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "1. 点击下方「去复习」开始学习\n2. 点击右下角「+」导入自己的卡片\n3. 右上角设置图标可调整复习偏好",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                )
+            ) {
+                Text("开始体验")
+            }
+        }
+    )
 }
 
 @Composable

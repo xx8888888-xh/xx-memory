@@ -15,6 +15,7 @@ object NotificationScheduler {
     private const val TAG = "NotificationScheduler"
 
     private const val ALARM_REQUEST_CODE_BASE = 8000
+    private const val SAFETY_CANCEL_COUNT = 12
 
     /**
      * Schedule alarms at every configured reminder time slot.
@@ -83,20 +84,18 @@ object NotificationScheduler {
 
     /**
      * Cancel all scheduled reminder alarms.
+     * Uses a safety margin so previously scheduled slots that are no longer
+     * present in settings (e.g. after user deleted a slot) are also cancelled.
      */
     fun cancelAllReminders(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val app = context.applicationContext as XxMemoryApplication
         val settings = app.settingsManager
-        // Cancel based on the larger of the two slot lists so previously
-        // scheduled alarms are cleared regardless of which mode was active.
         val reminderSlots = parseTimeSlots(settings.reminderTimeSlots)
         val focusedSlots = parseTimeSlots(settings.focusedTimeSlots)
-        val maxCount = maxOf(reminderSlots.size, focusedSlots.size)
-        if (maxCount == 0) {
-            Log.d(TAG, "No reminders to cancel")
-            return
-        }
+        // Cancel based on the larger of the two slot lists plus a safety margin
+        // to catch stale alarms from earlier configurations.
+        val maxCount = maxOf(reminderSlots.size, focusedSlots.size, SAFETY_CANCEL_COUNT)
         for (index in 0 until maxCount) {
             val intent = Intent(context, AlarmReceiver::class.java)
             val pendingIntent = PendingIntent.getBroadcast(
@@ -106,8 +105,8 @@ object NotificationScheduler {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             alarmManager.cancel(pendingIntent)
-            Log.d(TAG, "Canceled reminder #$index")
         }
+        Log.d(TAG, "Canceled up to $maxCount reminders")
     }
 
     /**

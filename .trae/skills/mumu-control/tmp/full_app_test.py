@@ -488,6 +488,12 @@ def main():
         log_write("ERROR: Failed to connect to device")
         sys.exit(1)
 
+    # 处理首次启动的新用户引导页
+    if has_text(d, "开始体验", timeout=3.0) or has_text(d, "欢迎使用", timeout=1.5):
+        log_write("检测到新用户引导页，点击开始体验")
+        safe_click_text(d, "开始体验")
+        wait(2.5)
+
     import_test_cards(d)
     test_home_page(d)
     test_review_clean_ui(d)

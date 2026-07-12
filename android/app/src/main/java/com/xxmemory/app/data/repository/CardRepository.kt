@@ -37,6 +37,8 @@ class CardRepository(
 
     suspend fun insertCard(card: Card): Long = cardDao.insertCard(card)
 
+    suspend fun insertAllCards(cards: List<Card>): List<Long> = cardDao.insertAll(cards)
+
     suspend fun insertReviewLog(log: ReviewLog): Long = reviewLogDao.insert(log)
 
     fun getLogsForCard(cardId: Long): Flow<List<ReviewLog>> = reviewLogDao.getLogsForCard(cardId)

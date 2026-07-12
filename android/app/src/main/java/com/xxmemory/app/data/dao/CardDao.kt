@@ -48,6 +48,9 @@ interface CardDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertCard(card: Card): Long
 
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertAll(cards: List<Card>): List<Long>
+
     @Query("SELECT DISTINCT subject FROM cards WHERE subject != ''")
     fun getSubjects(): Flow<List<String>>
 

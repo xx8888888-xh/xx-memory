@@ -89,7 +89,7 @@ class MemoryAlgorithmTest {
     }
 
     @Test
-    fun `SM2 hard quality lowers EF`() {
+    fun `SM2 hard quality lowers EF but still advances interval`() {
         val before = 2.5f
         val result = SM2Algorithm.calculate(
             quality = 1,
@@ -98,6 +98,7 @@ class MemoryAlgorithmTest {
             currentInterval = 4
         )
         assertTrue("EF should drop after hard rating", result.nextEaseFactor < before)
+        assertTrue("Interval should still advance on hard but correct recall", result.nextInterval > 4)
     }
 
     @Test

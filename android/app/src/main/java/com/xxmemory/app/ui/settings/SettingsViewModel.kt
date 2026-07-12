@@ -37,6 +37,7 @@ data class SettingsUiState(
     val ttsAutoPlayQuestion: Boolean = false,
     val ttsAutoPlayAnswer: Boolean = true,
     val poetryRecitationEnabled: Boolean = true,
+    val firstLetterHintEnabled: Boolean = true,
     val permissionRationale: String? = null
 )
 
@@ -71,7 +72,8 @@ class SettingsViewModel : ViewModel() {
             focusedTimeSlots = settingsManager.focusedTimeSlots,
             ttsAutoPlayQuestion = settingsManager.ttsAutoPlayQuestion,
             ttsAutoPlayAnswer = settingsManager.ttsAutoPlayAnswer,
-            poetryRecitationEnabled = settingsManager.poetryRecitationEnabled
+            poetryRecitationEnabled = settingsManager.poetryRecitationEnabled,
+            firstLetterHintEnabled = settingsManager.firstLetterHintEnabled
         )
     }
 
@@ -158,6 +160,11 @@ class SettingsViewModel : ViewModel() {
     fun togglePoetryRecitation(enabled: Boolean) {
         settingsManager.poetryRecitationEnabled = enabled
         _uiState.value = _uiState.value.copy(poetryRecitationEnabled = enabled)
+    }
+
+    fun toggleFirstLetterHint(enabled: Boolean) {
+        settingsManager.firstLetterHintEnabled = enabled
+        _uiState.value = _uiState.value.copy(firstLetterHintEnabled = enabled)
     }
 
     fun toggleShuffle(enabled: Boolean) {

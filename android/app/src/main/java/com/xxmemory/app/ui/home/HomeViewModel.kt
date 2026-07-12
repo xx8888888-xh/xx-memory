@@ -18,6 +18,8 @@ data class HomeUiState(
     val dueCards: List<Card> = emptyList(),
     val totalCards: Int = 0,
     val dueCount: Int = 0,
+    /** 今日实际到期卡片总数（不受每日限制影响），用于首页展示真实学习负担。 */
+    val totalDueCount: Int = 0,
     val todayReviewed: Int = 0,
     val subjects: List<String> = emptyList(),
     val selectedSubject: String? = null,
@@ -107,6 +109,7 @@ class HomeViewModel : ViewModel() {
                     dueCards = dueCards,
                     totalCards = totalCards,
                     dueCount = if (settings.dailyCardLimitEnabled) dueCards.size.coerceAtMost(limit) else dueCards.size,
+                    totalDueCount = dueCards.size,
                     todayReviewed = todayReviewed,
                     subjects = subjects,
                     nextSevenDays = nextSevenDays,
@@ -151,6 +154,15 @@ class HomeViewModel : ViewModel() {
         var streak = 0
         val cal = Calendar.getInstance()
         cal.timeInMillis = todayStart
+
+        // 今天有复习则计入；今天尚未复习则从昨天开始倒数，避免早晨打开时连续天数归零。
+        val todayEnd = CardRepository.getNextDayStart(todayStart)
+        if (repository.getCountForDay(todayStart, todayEnd) > 0) {
+            streak++
+        }
+
+        // 从昨天开始往前数连续有复习的天数
+        cal.add(Calendar.DAY_OF_YEAR, -1)
         for (i in 0..365) {
             val dayStart = CardRepository.getStartOfDay(cal.timeInMillis)
             val dayEnd = CardRepository.getNextDayStart(dayStart)

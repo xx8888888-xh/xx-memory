@@ -85,7 +85,13 @@ data class ReviewUiState(
     val dictationResult: SpellingResult? = null,
     val fillBlankInput: String = "",
     val fillBlankResult: SpellingResult? = null,
-    val wrongAttempts: Int = 0  // BBDC 模式下当前卡片选错次数
+    val wrongAttempts: Int = 0,  // BBDC 模式下当前卡片选错次数
+
+    // First-letter hint (partial cueing effect)
+    val showFirstLetterHint: Boolean = false,
+
+    // Wrong cards tracking for post-review recap
+    val wrongCards: List<Card> = emptyList()
 )
 
 sealed class SpellingResult {
@@ -149,8 +155,14 @@ class ReviewViewModel : ViewModel() {
                 }
                 val limitedCards = sortedCards.take(limit)
 
-                // Apply shuffle (after difficult-first sorting, randomizes among selected cards)
-                val finalCards = if (settingsManager.shuffleCards) limitedCards.shuffled() else limitedCards
+                // Apply shuffle only when difficult-first is disabled, otherwise it would destroy
+                // the deliberate difficulty ordering. When shuffling is needed, it randomizes
+                // within the selected daily-limit set.
+                val finalCards = if (settingsManager.shuffleCards && !settingsManager.difficultFirst) {
+                    limitedCards.shuffled()
+                } else {
+                    limitedCards
+                }
 
                 val firstCard = finalCards.firstOrNull()
                 val mode = ReviewMode.from(settingsManager.reviewMode)
@@ -412,6 +424,16 @@ class ReviewViewModel : ViewModel() {
         )
     }
 
+    /** 切换首字母提示显示状态（认知科学：部分线索效应）。 */
+    fun toggleFirstLetterHint() {
+        _uiState.value = _uiState.value.copy(showFirstLetterHint = !_uiState.value.showFirstLetterHint)
+    }
+
+    /** 隐藏首字母提示。 */
+    fun hideFirstLetterHint() {
+        _uiState.value = _uiState.value.copy(showFirstLetterHint = false)
+    }
+
     /** 查看答案后更改自评。 */
     fun changeSelfAssessment(assessment: SelfAssessment) {
         _uiState.value = _uiState.value.copy(selfAssessment = assessment)
@@ -583,6 +605,14 @@ class ReviewViewModel : ViewModel() {
     /** 移动到下一题。 */
     private fun moveToNext(scheduleInfo: String?) {
         val state = _uiState.value
+        // Track wrong cards for post-review recap
+        val currentCard = state.currentCard
+        val updatedWrongCards = if (currentCard != null && state.isCorrect == false) {
+            if (state.wrongCards.none { it.id == currentCard.id }) {
+                state.wrongCards + currentCard
+            } else state.wrongCards
+        } else state.wrongCards
+
         val nextIndex = state.currentIndex + 1
         if (nextIndex >= state.cards.size) {
             _uiState.value = state.copy(
@@ -604,7 +634,9 @@ class ReviewViewModel : ViewModel() {
                 dictationResult = null,
                 fillBlankInput = "",
                 fillBlankResult = null,
-                wrongAttempts = 0
+                wrongAttempts = 0,
+                showFirstLetterHint = false,
+                wrongCards = updatedWrongCards
             )
         } else {
             val nextCard = state.cards[nextIndex]
@@ -630,7 +662,9 @@ class ReviewViewModel : ViewModel() {
                 dictationResult = null,
                 fillBlankInput = "",
                 fillBlankResult = null,
-                wrongAttempts = 0
+                wrongAttempts = 0,
+                showFirstLetterHint = false,
+                wrongCards = updatedWrongCards
             )
         }
     }
@@ -745,6 +779,41 @@ class ReviewViewModel : ViewModel() {
         }
     }
 
+    /** 加载错题卡片进行专项复习。 */
+    fun loadWrongCardsForReview() {
+        val state = _uiState.value
+        if (state.wrongCards.isEmpty()) return
+        val mode = ReviewMode.from(settingsManager.reviewMode)
+        val firstCard = state.wrongCards.first()
+        val initialStep = initialStepForMode(mode, firstCard)
+        _uiState.value = state.copy(
+            cards = state.wrongCards,
+            currentIndex = 0,
+            currentCard = firstCard,
+            isComplete = false,
+            completedCount = 0,
+            currentNumber = 1,
+            totalCount = state.wrongCards.size,
+            nextScheduleInfo = null,
+            step = initialStep,
+            options = if (initialStep == ReviewStep.OPTIONS) generateOptions(firstCard) else emptyList(),
+            selectedOption = null,
+            isCorrect = null,
+            showHint = false,
+            showSpelling = false,
+            spellingResult = SpellingResult.Idle,
+            selfAssessment = null,
+            showAnswer = false,
+            dictationInput = "",
+            dictationResult = null,
+            fillBlankInput = "",
+            fillBlankResult = null,
+            wrongAttempts = 0,
+            showFirstLetterHint = false,
+            wrongCards = emptyList()
+        )
+    }
+
     // --- Dictation & Fill Blank ---
 
     fun updateDictationInput(input: String) {
@@ -807,7 +876,21 @@ class ReviewViewModel : ViewModel() {
     }
 
     private fun normalizeText(text: String): String {
-        return text.replace("，", ",").replace("。", ".").replace(" ", "").lowercase()
+        return text
+            .replace("，", ",")
+            .replace("。", ".")
+            .replace("！", "!")
+            .replace("？", "?")
+            .replace("；", ";")
+            .replace("：", ":")
+            .replace("“", "\"")
+            .replace("”", "\"")
+            .replace("‘", "'")
+            .replace("’", "'")
+            .replace("（", "(")
+            .replace("）", ")")
+            .replace(" ", "")
+            .lowercase()
     }
 
     private fun applyStudyMode(nextDayTimestamp: Long): Long {

@@ -130,4 +130,12 @@ class SettingsManager(context: Context) {
     var poetryRecitationEnabled: Boolean
         get() = prefs.getBoolean("poetry_recitation_enabled", true)
         set(value) = prefs.edit().putBoolean("poetry_recitation_enabled", value).apply()
+
+    /**
+     * 首字母提示功能：在独立回忆/自评阶段显示答案的首字母/首字，
+     * 利用认知科学中的"部分线索效应"(Partial Cueing Effect)帮助回忆过渡。
+     */
+    var firstLetterHintEnabled: Boolean
+        get() = prefs.getBoolean("first_letter_hint_enabled", true)
+        set(value) = prefs.edit().putBoolean("first_letter_hint_enabled", value).apply()
 }

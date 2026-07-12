@@ -94,9 +94,15 @@ object SM2Algorithm : MemoryAlgorithm {
         )
     }
 
+    /**
+     * 将应用层的 4 级评分映射到 SM-2 的 0-5 质量分。
+     * 0=忘记 对应 SM-2 0（完全不会），1=困难 对应 3（艰难回忆但正确），
+     * 2=良好 对应 4（犹豫但正确），3=简单 对应 5（完美）。
+     * 这样“困难”不会被视为错误，仅降低 EF 并继续推进间隔。
+     */
     private fun mapQualityToSm2(quality: Int): Int = when (quality) {
         0 -> 0
-        1 -> 2
+        1 -> 3
         2 -> 4
         3 -> 5
         else -> 3
