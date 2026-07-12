@@ -3,114 +3,114 @@
     "name": "导入测试卡片",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB983E50>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\import_result.png"
   },
   {
     "name": "首页显示",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB983FD0>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\home_page.png"
   },
   {
     "name": "首页搜索",
     "status": "PASS",
     "note": "输入 abandon",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB994E50>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\home_search.png"
   },
   {
     "name": "首页下滑统计",
     "status": "INFO",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB9943D0>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\home_scroll.png"
   },
   {
     "name": "复习页-无模式切换条",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB994D10>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_clean_ui.png"
   },
   {
     "name": "复习页-更多菜单入口",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB994D10>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_clean_ui.png"
   },
   {
     "name": "复习页-更多菜单展开",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB995810>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_more_menu.png"
   },
   {
     "name": "单词复习-选择正确选项",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB995E90>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_vocab_option.png"
   },
   {
     "name": "单词复习-例句自评",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB995E10>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_vocab_example.png"
   },
   {
     "name": "单词复习-独立回忆",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB996610>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_vocab_recall.png"
   },
   {
     "name": "单词复习-提交自评",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB997490>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_vocab_submit.png"
   },
   {
     "name": "单词复习-拼写检查",
     "status": "PASS",
     "note": "自动进入拼写检查",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB996710>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_vocab_spelling.png"
   },
   {
     "name": "单词复习-拼写提交",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB9979D0>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_vocab_spelling_done.png"
   },
   {
     "name": "古诗文复习-进入",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB995D90>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_poetry_enter.png"
   },
   {
     "name": "古诗文复习-开始默写",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB9A0B10>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_poetry_dictation.png"
   },
   {
     "name": "古诗文复习-默写提交",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB997E50>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\review_poetry_dictation_done.png"
   },
   {
     "name": "设置页",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB996150>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\settings_page.png"
   },
   {
     "name": "设置-每日卡片限制",
     "status": "PASS",
     "note": "改为15",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB997390>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\settings_daily_limit.png"
   },
   {
     "name": "设置-返回首页",
     "status": "PASS",
     "note": "",
-    "screenshot": "<PIL.JpegImagePlugin.JpegImageFile image mode=RGB size=720x1280 at 0x234EB997AD0>"
+    "screenshot": "c:\\Users\\xx\\Desktop\\xx memory\\.agents\\skills\\mumu-control\\tmp\\settings_back_home.png"
   }
 ]

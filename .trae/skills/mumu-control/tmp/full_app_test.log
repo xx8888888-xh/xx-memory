@@ -31,17 +31,19 @@ Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\
 [PASS] 古诗文复习-进入: 
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_dictation.png
 [PASS] 古诗文复习-开始默写: 
+scroll_and_click_text: 第 1 次滑动后点击 '检查' 成功
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_dictation_done.png
-[FAIL] 古诗文复习-默写提交: 
-Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_page.png
-[FAIL] 设置页: 
-Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_daily_limit.png
-[PASS] 设置-每日卡片限制: 改为15
-Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_back_home.png
-[PASS] 设置-返回首页: 
+[PASS] 古诗文复习-默写提交: 
+FATAL: Traceback (most recent call last):
+  File "c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\full_app_test.py", line 504, in <module>
+    main()
+  File "c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\full_app_test.py", line 487, in main
+    test_settings(d)
+  File "c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\full_app_test.py", line 402, in test_settings
+    if parent.exists:
+       ^^^^^^^^^^^^^
+AttributeError: 'function' object has no attribute 'exists'
 
-测试完成: 总计 19, 通过 16, 失败 2, 信息 1
-报告保存: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\full_app_report.json
 Connected to emulator-5556 (attempt 1)
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\import_page.png
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\import_json_input.png
@@ -75,106 +77,17 @@ Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\
 [PASS] 古诗文复习-进入: 
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_dictation.png
 [PASS] 古诗文复习-开始默写: 
+scroll_and_click_text: 第 1 次滑动后点击 '检查' 成功
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_dictation_done.png
-[FAIL] 古诗文复习-默写提交: 
+[PASS] 古诗文复习-默写提交: 
+获取设置图标父节点失败: 
+设置页入口：通过 content-desc='设置' 点击
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_page.png
-[FAIL] 设置页: 
+[PASS] 设置页: 
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_daily_limit.png
 [PASS] 设置-每日卡片限制: 改为15
 Screenshot saved: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_back_home.png
 [PASS] 设置-返回首页: 
 
-测试完成: 总计 19, 通过 16, 失败 2, 信息 1
-报告保存: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\full_app_report.json
-Connected to emulator-5556 (attempt 1)
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\import_page.png
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\import_json_input.png
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\import_result.png
-[PASS] 导入测试卡片: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\home_page.png
-[PASS] 首页显示: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\home_search.png
-[PASS] 首页搜索: 输入 abandon
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\home_scroll.png
-[INFO] 首页下滑统计: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_clean_ui.png
-[PASS] 复习页-无模式切换条: 
-[PASS] 复习页-更多菜单入口: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_more_menu.png
-[PASS] 复习页-更多菜单展开: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_enter.png
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_option.png
-[PASS] 单词复习-选择正确选项: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_example.png
-[PASS] 单词复习-例句自评: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_recall.png
-[PASS] 单词复习-独立回忆: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_submit.png
-[PASS] 单词复习-提交自评: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_spelling.png
-[PASS] 单词复习-拼写检查: 自动进入拼写检查
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_spelling_done.png
-[PASS] 单词复习-拼写提交: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_enter.png
-[PASS] 古诗文复习-进入: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_dictation.png
-[PASS] 古诗文复习-开始默写: 
-检查按钮文字匹配失败，使用坐标兜底 (359, 855)
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_dictation_done.png
-[FAIL] 古诗文复习-默写提交: 
-设置页入口：content-desc 未找到，使用坐标兜底 (670, 110)
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_page.png
-[FAIL] 设置页: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_daily_limit.png
-[PASS] 设置-每日卡片限制: 改为15
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_back_home.png
-[PASS] 设置-返回首页: 
-
-测试完成: 总计 19, 通过 16, 失败 2, 信息 1
-报告保存: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\full_app_report.json
-Connected to emulator-5556 (attempt 1)
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\import_page.png
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\import_json_input.png
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\import_result.png
-[PASS] 导入测试卡片: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\home_page.png
-[PASS] 首页显示: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\home_search.png
-[PASS] 首页搜索: 输入 abandon
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\home_scroll.png
-[INFO] 首页下滑统计: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_clean_ui.png
-[PASS] 复习页-无模式切换条: 
-[PASS] 复习页-更多菜单入口: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_more_menu.png
-[PASS] 复习页-更多菜单展开: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_enter.png
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_option.png
-[PASS] 单词复习-选择正确选项: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_example.png
-[PASS] 单词复习-例句自评: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_recall.png
-[PASS] 单词复习-独立回忆: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_submit.png
-[PASS] 单词复习-提交自评: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_spelling.png
-[PASS] 单词复习-拼写检查: 自动进入拼写检查
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_vocab_spelling_done.png
-[PASS] 单词复习-拼写提交: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_enter.png
-[PASS] 古诗文复习-进入: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_dictation.png
-[PASS] 古诗文复习-开始默写: 
-检查按钮文字匹配失败，使用坐标兜底 (360, 988)
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\review_poetry_dictation_done.png
-[PASS] 古诗文复习-默写提交: 
-设置页入口：content-desc 未找到，使用坐标兜底 (640, 136)
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_page.png
-[PASS] 设置页: 
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_daily_limit.png
-[PASS] 设置-每日卡片限制: 改为15
-Screenshot saved: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\settings_back_home.png
-[PASS] 设置-返回首页: 
-
 测试完成: 总计 19, 通过 18, 失败 0, 信息 1
-报告保存: C:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\full_app_report.json
+报告保存: c:\Users\xx\Desktop\xx memory\.agents\skills\mumu-control\tmp\full_app_report.json

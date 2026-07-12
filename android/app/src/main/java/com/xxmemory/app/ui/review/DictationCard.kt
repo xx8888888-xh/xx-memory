@@ -9,13 +9,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -70,13 +67,11 @@ internal fun DictationCard(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(12.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState()),
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top
             ) {
@@ -117,6 +112,20 @@ internal fun DictationCard(
                         Text("跳过朗诵", fontSize = 14.sp)
                     }
                 } else {
+                    OutlinedTextField(
+                        value = input,
+                        onValueChange = onInputChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        minLines = 10,
+                        maxLines = 20,
+                        label = { Text("默写全文") },
+                        enabled = result !is SpellingResult.Correct
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     if (isPoetry) {
                         Text(
                             text = card.question,
@@ -125,92 +134,78 @@ internal fun DictationCard(
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                     }
 
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        OutlinedTextField(
-                            value = input,
-                            onValueChange = onInputChange,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 420.dp),
-                            minLines = 14,
-                            maxLines = 18,
-                            label = { Text("默写全文") },
-                            enabled = result !is SpellingResult.Correct
-                        )
-
-                        when (result) {
-                            is SpellingResult.Correct -> {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Check,
-                                        contentDescription = null,
-                                        tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "回答正确",
-                                        color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
+                    when (result) {
+                        is SpellingResult.Correct -> {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Filled.Check,
+                                    contentDescription = null,
+                                    tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "回答正确",
+                                    color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
-                            is SpellingResult.Wrong -> {
-                                Spacer(modifier = Modifier.height(6.dp))
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Close,
-                                        contentDescription = null,
-                                        tint = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "正确答案：${result.correctAnswer}",
-                                        color = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
-                            }
-                            else -> {}
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        when (result) {
-                            is SpellingResult.Correct, is SpellingResult.Wrong -> {
-                                Button(
-                                    onClick = onFinish,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(44.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
-                                    )
-                                ) {
-                                    Text("继续", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                }
+                        is SpellingResult.Wrong -> {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = null,
+                                    tint = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "正确答案：${result.correctAnswer}",
+                                    color = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
-                            else -> {
-                                Button(
-                                    onClick = onCheck,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(44.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    enabled = input.isNotBlank(),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
-                                    )
-                                ) {
-                                    Text("检查", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                }
+                        }
+                        else -> {}
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    when (result) {
+                        is SpellingResult.Correct, is SpellingResult.Wrong -> {
+                            Button(
+                                onClick = onFinish,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text("继续", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            }
+                        }
+                        else -> {
+                            Button(
+                                onClick = onCheck,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                enabled = input.isNotBlank(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text("检查", fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                             }
                         }
                     }

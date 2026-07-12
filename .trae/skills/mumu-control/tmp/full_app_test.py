@@ -48,7 +48,8 @@ def take_screenshot(device, save_path=None):
 
 def shot(d, name):
     p = str(OUT_DIR / f"{name}.png")
-    return take_screenshot(d, p)
+    take_screenshot(d, p)
+    return p
 
 
 def home(d):
@@ -113,6 +114,31 @@ def has_text(d, text, partial=False, timeout=1.5):
             return True
     except Exception:
         pass
+    return False
+
+
+def is_element_on_screen(elem, screen_h=1280):
+    """判断元素 bounds 是否在当前屏幕可视区域内。"""
+    try:
+        bounds = elem.bounds()
+        return bounds[1] >= 0 and bounds[3] <= screen_h and bounds[3] > bounds[1]
+    except Exception:
+        return False
+
+
+def scroll_and_click_text(d, text, partial=False, max_swipes=6, start_y=1000, end_y=400):
+    """上滑查找并点击指定文本，直到成功或达到最大滑动次数。"""
+    for i in range(max_swipes):
+        try:
+            target = d(text=text) if not partial else d(textContains=text)
+            if target.exists and is_element_on_screen(target):
+                if _tap_element_center(d, target):
+                    log_write(f"scroll_and_click_text: 第 {i + 1} 次滑动后点击 '{text}' 成功")
+                    return True
+        except Exception as e:
+            log_write(f"scroll_and_click_text error at swipe {i + 1}: {e}")
+        d.swipe(360, start_y, 360, end_y, 0.5)
+        wait(0.6)
     return False
 
 
@@ -344,11 +370,9 @@ def test_poetry_review_flow(d):
             log_write(f"set_text failed: {e}, fallback to adb shell input text")
             d.shell("input text '测试古诗全文内容'")
     wait(0.5)
-    # 多行输入框较高，检查按钮在屏幕外，需要上滑显示
-    d.swipe(360, 900, 360, 600, 0.5)
-    wait(0.5)
-    if not safe_click_text(d, "检查"):
-        log_write("检查按钮文字匹配失败，使用坐标兜底 (360, 988)")
+    # 多行输入框较高，检查按钮可能被推到屏幕外，循环上滑直到按钮可见并点击
+    if not scroll_and_click_text(d, "检查", partial=False, max_swipes=6, start_y=1000, end_y=400):
+        log_write("检查按钮上滑后仍未定位，使用坐标兜底 (360, 988)")
         d.shell("input tap 360 988")
         wait(0.5)
     wait(2.5)
@@ -369,20 +393,31 @@ def test_poetry_review_flow(d):
 
 def test_settings(d):
     home(d)
-    # 右上角设置图标：优先使用 content-desc="设置" 定位，fallback 到正确中心坐标
+    # 右上角设置图标：优先使用 content-desc="设置" 定位，fallback 到文本/坐标兜底
     settings_btn = d(description="设置")
-    if settings_btn.exists:
+    clicked_settings = False
+    if settings_btn.wait(timeout=3.0):
         # 点击父节点中心，避免子节点不可点击导致失效
-        parent = settings_btn.parent
-        if parent.exists:
-            _tap_element_center(d, parent)
-        else:
+        try:
+            parent = settings_btn.parent()
+            if parent and parent.exists:
+                clicked_settings = _tap_element_center(d, parent)
+        except Exception as e:
+            log_write(f"获取设置图标父节点失败: {e}")
+        if not clicked_settings:
+            clicked_settings = _tap_element_center(d, settings_btn)
+        if not clicked_settings:
             settings_btn.click()
+            clicked_settings = True
         log_write("设置页入口：通过 content-desc='设置' 点击")
+    elif safe_click_text(d, "设置", partial=False, timeout=2.0):
+        clicked_settings = True
+        log_write("设置页入口：通过文本 '设置' 点击")
     else:
-        log_write("设置页入口：content-desc 未找到，使用坐标兜底 (640, 136)")
+        log_write("设置页入口：content-desc/文本均未找到，使用坐标兜底 (640, 136)")
         tap_coord(d, 640, 136)
-    wait(2)
+        clicked_settings = True
+    wait(2.5)
     s = shot(d, "settings_page")
     ok = has_text(d, "设置") or has_text(d, "每日卡片限制")
     if not ok:

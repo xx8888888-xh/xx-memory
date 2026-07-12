@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,7 +40,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -196,13 +194,9 @@ fun ReviewScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+            .padding(12.dp)
     ) {
-        // Progress bar
-        ReviewProgressBar(progress = uiState.progress, isEinkMode = isEinkMode)
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Header: counter + more menu
+        // Header: counter + more menu (minimized)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -210,22 +204,21 @@ fun ReviewScreen(
         ) {
             Text(
                 text = "${uiState.currentNumber} / ${uiState.totalCount}",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             IconButton(
                 onClick = { showMoreMenu = true },
-                modifier = Modifier.size(40.dp)
+                modifier = Modifier.size(32.dp)
             ) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
                     contentDescription = "更多",
+                    modifier = Modifier.size(20.dp),
                     tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         if (uiState.isComplete) {
             ReviewCompleteState(
@@ -251,12 +244,12 @@ fun ReviewScreen(
                 viewModel.previewSchedule(viewModel.inferCurrentQuality())
             }
 
-            if (!isImmersive) {
+            if (!isImmersive && card.cardType != CardEntity.TYPE_POETRY) {
                 CardMetaRow(
                     card = card,
                     isEinkMode = isEinkMode
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
 
             // Main content area
@@ -294,29 +287,16 @@ fun ReviewScreen(
                         }
                     )
 
-                    ReviewStep.OPTIONS -> Column(modifier = Modifier.fillMaxSize()) {
-                        if (uiState.wrongAttempts > 0 && uiState.isCorrect == false) {
-                            Text(
-                                text = "选错了，再试一次",
-                                color = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp)
-                            )
-                        }
-                        Box(modifier = Modifier.weight(1f)) {
-                            OptionsCard(
-                                card = card,
-                                options = uiState.options,
-                                selectedOption = uiState.selectedOption,
-                                isEinkMode = isEinkMode,
-                                showImage = showImageInQuestion,
-                                onSelect = { viewModel.selectOption(it) }
-                            )
-                        }
+                    ReviewStep.OPTIONS -> Box(modifier = Modifier.fillMaxSize()) {
+                        OptionsCard(
+                            card = card,
+                            options = uiState.options,
+                            selectedOption = uiState.selectedOption,
+                            isEinkMode = isEinkMode,
+                            showImage = showImageInQuestion,
+                            onSelect = { viewModel.selectOption(it) },
+                            wrongAttempts = uiState.wrongAttempts
+                        )
                     }
 
                     ReviewStep.EXAMPLE_REVIEW,
@@ -371,23 +351,24 @@ fun ReviewScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Bottom action area
-            BottomActionArea(
-                uiState = uiState,
-                cardType = card.cardType,
-                isEinkMode = isEinkMode,
-                flashcardPreviews = flashcardPreviews,
-                selectionPreview = selectionPreview,
-                onReveal = { viewModel.flipCard() },
-                onAssess = { quality -> viewModel.assessCard(quality) },
-                onAssessSelection = { viewModel.assessCurrentFromSelection() },
-                onBaicizhanKnow = { viewModel.onBaicizhanKnow() },
-                onBaicizhanShowDetail = { viewModel.onBaicizhanShowDetail() },
-                onChangeSelfAssessment = { viewModel.changeSelfAssessment(it) },
-                onSubmitBbdcAssessment = { viewModel.submitBbdcAssessment() }
-            )
+            // Bottom action area: only show when the current step actually uses it.
+            if (shouldShowBottomActionArea(uiState.step)) {
+                Spacer(modifier = Modifier.height(12.dp))
+                BottomActionArea(
+                    uiState = uiState,
+                    cardType = card.cardType,
+                    isEinkMode = isEinkMode,
+                    flashcardPreviews = flashcardPreviews,
+                    selectionPreview = selectionPreview,
+                    onReveal = { viewModel.flipCard() },
+                    onAssess = { quality -> viewModel.assessCard(quality) },
+                    onAssessSelection = { viewModel.assessCurrentFromSelection() },
+                    onBaicizhanKnow = { viewModel.onBaicizhanKnow() },
+                    onBaicizhanShowDetail = { viewModel.onBaicizhanShowDetail() },
+                    onChangeSelfAssessment = { viewModel.changeSelfAssessment(it) },
+                    onSubmitBbdcAssessment = { viewModel.submitBbdcAssessment() }
+                )
+            }
 
             uiState.nextScheduleInfo?.let {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -401,6 +382,13 @@ fun ReviewScreen(
             }
         }
     }
+}
+
+private fun shouldShowBottomActionArea(step: ReviewStep): Boolean = when (step) {
+    ReviewStep.QUESTION,
+    ReviewStep.RECALL,
+    ReviewStep.DETAIL -> true
+    else -> false
 }
 
 private fun scheduleSubtext(interval: Int?): String = interval?.let {
@@ -459,36 +447,6 @@ private fun CodeBlock(text: String) {
             text = displayText,
             style = MaterialTheme.typography.bodyLarge.copy(fontFamily = FontFamily.Monospace),
             color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-private fun ReviewProgressBar(progress: Float, isEinkMode: Boolean) {
-    if (isEinkMode) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(progress)
-                    .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.onSurface)
-            )
-        }
-    } else {
-        LinearProgressIndicator(
-            progress = progress,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(8.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
         )
     }
 }
@@ -938,7 +896,8 @@ private fun OptionsCard(
     selectedOption: String?,
     isEinkMode: Boolean,
     showImage: Boolean,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
+    wrongAttempts: Int = 0
 ) {
     val scrollState = rememberScrollState()
     Card(
@@ -950,56 +909,62 @@ private fun OptionsCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(20.dp)
+                .padding(16.dp)
                 .verticalScroll(scrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.Top
         ) {
+            if (wrongAttempts > 0) {
+                Text(
+                    text = "选错了，再试一次",
+                    color = if (isEinkMode) Color.Gray else MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp)
+                )
+            }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 TypeLabel(cardType = card.cardType, isEinkMode = isEinkMode)
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 if (showImage && !card.imageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = card.imageUrl,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 160.dp)
+                            .heightIn(max = 140.dp)
                             .clip(RoundedCornerShape(16.dp)),
                         contentScale = ContentScale.Fit
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
                 if (card.cardType == CardEntity.TYPE_CODE) {
                     CodeBlock(text = card.question)
                 } else {
                     Text(
                         text = card.question,
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
                 }
                 if (card.phonetic.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = card.phonetic,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "请选择正确答案",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 options.forEach { option ->
                     val isSelected = selectedOption == option
                     val isAnswerCorrect = option.trim() == card.answer.trim()
@@ -1022,15 +987,15 @@ private fun OptionsCard(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
+                            .clip(RoundedCornerShape(14.dp))
                             .background(bgColor)
                             .border(
                                 width = 1.5.dp,
                                 color = borderColor,
-                                shape = RoundedCornerShape(16.dp)
+                                shape = RoundedCornerShape(14.dp)
                             )
                             .clickable { onSelect(option) }
-                            .padding(16.dp),
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
@@ -1052,15 +1017,13 @@ private fun OptionsCard(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = option,
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -1119,16 +1082,16 @@ private fun DetailCard(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Question + answer header
+            // Question + answer header (minimized)
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = card.question,
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold
                 )
                 if (card.phonetic.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = card.phonetic,
                         style = MaterialTheme.typography.bodyMedium,
@@ -1138,7 +1101,7 @@ private fun DetailCard(
             }
 
             Divider(
-                modifier = Modifier.padding(vertical = 16.dp),
+                modifier = Modifier.padding(vertical = 12.dp),
                 color = if (isEinkMode) {
                     MaterialTheme.colorScheme.outline
                 } else {
@@ -1149,14 +1112,14 @@ private fun DetailCard(
             // Answer
             Text(
                 text = card.answer,
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
 
             // BBDC: prioritize real-context example sentence right after answer.
             if (reviewMode == ReviewMode.BBDC && card.example.isNotBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 InfoCard(
                     icon = Icons.Filled.SpeakerNotes,
                     title = "真实语境例句",
@@ -1167,7 +1130,7 @@ private fun DetailCard(
 
             // Hint (Baicizhan deep mode / when user asked for help)
             if (showHint && card.hint.isNotBlank() && isDeepMode) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 InfoCard(
                     icon = Icons.Filled.Lightbulb,
                     title = "提示",
@@ -1178,7 +1141,7 @@ private fun DetailCard(
 
             // Detail
             if (card.detail.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = card.detail,
                     style = MaterialTheme.typography.bodyMedium,
@@ -1188,7 +1151,7 @@ private fun DetailCard(
 
             // Example sentence (for non-BBDC modes)
             if (reviewMode != ReviewMode.BBDC && card.example.isNotBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 InfoCard(
                     icon = Icons.Filled.SpeakerNotes,
                     title = "例句",
@@ -1199,7 +1162,7 @@ private fun DetailCard(
 
             // Collocations
             if (card.collocations.isNotBlank() && isDeepMode) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 InfoCard(
                     icon = Icons.Filled.School,
                     title = "词组搭配",
@@ -1210,7 +1173,7 @@ private fun DetailCard(
 
             // Etymology
             if (card.etymology.isNotBlank() && isDeepMode) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 InfoCard(
                     icon = Icons.Filled.HelpOutline,
                     title = "词根词缀",
@@ -1221,7 +1184,7 @@ private fun DetailCard(
 
             // Rhyme hint
             if (card.rhyme.isNotBlank() && isDeepMode) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 InfoCard(
                     icon = Icons.Filled.Edit,
                     title = "押韵 / 联想",
@@ -1232,7 +1195,7 @@ private fun DetailCard(
 
             // Derivatives
             if (card.derivatives.isNotBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 InfoCard(
                     icon = Icons.Filled.AutoStories,
                     title = "派生词",
@@ -1243,13 +1206,13 @@ private fun DetailCard(
 
             // Image (always shown on detail page to reinforce memory)
             if (!card.imageUrl.isNullOrBlank()) {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 AsyncImage(
                     model = card.imageUrl,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 200.dp)
+                        .heightIn(max = 160.dp)
                         .clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Fit
                 )
@@ -1268,26 +1231,26 @@ private fun InfoCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (isEinkMode) 0.5f else 0.6f))
-            .padding(16.dp)
+            .padding(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
                 tint = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(16.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelLarge,
+                style = MaterialTheme.typography.labelMedium,
                 color = if (isEinkMode) Color.DarkGray else MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold
             )
         }
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = content,
             style = MaterialTheme.typography.bodyMedium,
